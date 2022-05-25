@@ -1,0 +1,24 @@
+{
+  "name": "option-list-editor",
+  "version": "0.0.0",
+  "main": "dist/option-list-editor.es.js",
+  "exports": {
+    ".": "./dist/option-list-editor.es.js"
+  },
+  "types": "types/option-list-editor.d.ts",
+  "files": [
+    "dist",
+    "types"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build"
+  },
+  "dependencies": {
+    "lit": "^2.0.2"
+  },
+  "devDependencies": {
+    "vite": "^2.7.2",
+    "typescript": "^4.4.4"
+  }
+}

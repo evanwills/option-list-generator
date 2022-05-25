@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/src/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>&lt;option-list-editor&gt;(Vite + Lit App)</title>
+    <script type="module" src="/src/option-list-editor.ts"></script>
+	<style>
+	</style>
+  </head>
+  <body>
+
+	<h1>&lt;option-list-editor&gt;</h1>
+    <option-list-editor id="new" hidehidden>
+		<option value="evan" selected data-group="Wills">Evan</option>
+		<option value="ivan" data-group="Wills">Ivan</option>
+		<option value="tarrin" data-group="Wills">Tarrin</option>
+		<option value="toria" data-group="Wills">Toria</option>
+		<option value="mallee" data-group="Pike Wills">Mallee</option>
+		<option value="ada" data-group="Pike Wills">Ada</option>
+		<option disabled>Samara</option>
+		<option value="nicole" disabled></option>
+    </option-list-editor>
+	<script>
+		function captureEvent(e) {
+			console.group('captureEvent()')
+			// console.log('e:', e)
+			console.log('this:', this)
+			console.log('this.eventData:', this.eventData)
+			console.groupEnd();
+		}
+		const wc = document.getElementById('new');
+		console.log('wc', wc)
+		wc.addEventListener('change', captureEvent)
+	</script>
+  </body>
+</html>
