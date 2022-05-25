@@ -31,6 +31,19 @@ export interface ISingleInputOption {
    * hidden
    */
   hideAfter : string,
+  /**
+   * Error message to show user
+   */
+  error: string
+}
+export interface IInputOptionImportHead {
+  value : number,       // 0
+  label : number,       // 1
+  default : number,     // 2
+  show : number,        // 3
+  group : number,       // 4
+  hideBefore : number,  // 5
+  hideAfter : number,   // 6
 }
 
 
@@ -39,4 +52,14 @@ export interface IEventData {
   action: string,
   field: string,
   value: string
+}
+
+
+/**
+ * List of key/value pairs where the value is always a string
+ *
+ * Often used for Redux Action lists for a given slice of state
+ */
+ export interface IObjNum {
+  [index: string]: number
 }

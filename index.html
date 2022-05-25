@@ -12,13 +12,13 @@
   <body>
 
 	<h1>&lt;option-list-editor&gt;</h1>
-    <option-list-editor id="new" hidehidden>
-		<option value="evan" selected data-group="Wills">Evan</option>
+    <option-list-editor id="new">
+		<option value="evan" data-group="Wills">Evan</option>
 		<option value="ivan" data-group="Wills">Ivan</option>
 		<option value="tarrin" data-group="Wills">Tarrin</option>
 		<option value="toria" data-group="Wills">Toria</option>
 		<option value="mallee" data-group="Pike Wills">Mallee</option>
-		<option value="ada" data-group="Pike Wills">Ada</option>
+		<option value="ada" selected data-group="Pike Wills">Ada</option>
 		<option disabled>Samara</option>
 		<option value="nicole" disabled></option>
     </option-list-editor>
@@ -31,7 +31,7 @@
 			console.groupEnd();
 		}
 		const wc = document.getElementById('new');
-		console.log('wc', wc)
+		// console.log('wc', wc)
 		wc.addEventListener('change', captureEvent)
 	</script>
   </body>
