@@ -145,12 +145,17 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
   /**
    * Whether or not import modal should be visible
    */
-  private _showImportModal : boolean = false;
+  private _showImportModal : boolean = true;
 
   /**
    * Whether or not import data includes header row
    */
   private _importHasHeader : boolean = true;
+
+  /**
+   * Whether or not import data is valid
+   */
+  private _importIsValid : boolean = true;
 
   /**
    * Import data TSV/CSV text
@@ -195,6 +200,27 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
 
   static styles = css`
   :host {
+    --ri-border-radius: var(0.9rem);
+
+    --wc-font-size: 1rem;
+    --wc-border-radius: var(--border-radius, var(--ri-border-radius));
+    --wc-text-colour: #000;
+    --wc-bg-colour: #2d2b2b;
+    --wc-error-bg-colour: var(--error-bg-colour, rgb(150, 0, 0));
+    --wc-error-text-colour: var(--error-text-colour, rgb(255, 255, 255));
+    --wc-line-width: 0.075rem;
+    --wc-max-width: 30rem;
+    --wc-default-input-font: 'Courier New', Courier, monospace;
+    --wc-input-font: var(--default-input-font, var(--wc-default-input-font));
+    --wc-outline-width: 0.25rem;
+    --wc-outline-style: dotted;
+    --wc-outline-offset: 0.2rem;
+
+    font-size: var(--wc-font-size);
+    background-color: var(--wc-bg-colour, inherit);
+    color:  var(--wc-text-colour, inherit);
+    font-family: inherit;
+    font-size: inherit;
     --font-family: Arial, Helvetica, sans-serif;
     font-family: var(--font-family);
   }
@@ -310,6 +336,66 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
     display: inline-block;
     width: 13.5rem;
   }
+  .close-bg {
+    background-color: #000;
+    bottom: -2rem;
+    left: -2rem;
+    opacity: 0.7;
+    position: fixed;
+    right: -2rem;
+    top: -2rem;
+    width: 150%;
+    z-index: 100;
+  }
+  .close {
+    position: absolute;
+    top: -0.5rem;
+    right: -0.5rem;
+  }
+  .import-ui {
+    background-color: var(--wc-bg-colour);
+    box-shadow: 0.5rem 0.5rem 1.5rem rgba(0, 0, 0, 0.8);
+    border: var(--wc-line-width) solid var(--wc-text-colour);
+    bottom: 4rem;
+    /* display: flex; */
+    left: 4rem;
+    /* min-height: 30rem; */
+    padding: 1rem;
+    position: fixed;
+    right: 4rem;
+    top: 4rem;
+    z-index: 110;
+  }
+  .import-ui-inner {
+    /* display: grid; */
+    /* grid-template-columns: 1fr 1.5fr; */
+    /* grid-template-rows: auto auto auto 1fr; */
+    /* grid-template-areas:
+      "errors errors"
+      "regex regex"
+      "sample controls"
+      "sample results"; */
+    /* grid-gap: 1rem; */
+  }
+  .import-sep-input {
+    display: inline-block;
+    width: 2rem;
+    margin-right: 1rem;
+  }
+  .import-data__wrap {
+    width: 100%;
+  }
+  .import-data__label {
+    display: block;
+  }
+  .import-data__input {
+    display: block;
+    width: calc(100% - 0.5rem);
+    height: 20rem;
+  }
+  .import-ui__head {
+    margin: 0;
+  }
   @media screen and (min-width: 48rem) {
     .has-value {
       grid-template-areas: 'pos value label move'
@@ -352,7 +438,6 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
     }
   }
   `;
-
 
 
   //  END:  Styling
@@ -538,6 +623,213 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
       : '';
   }
 
+  private _getHeader(colSep : string) : string {
+    let _output = 'value' + colSep + 'label' + colSep + 'default' + colSep + 'show';
+
+    if (this.allowGroup) {
+      _output += colSep + 'group';
+    }
+    if (this.allowHideByDate) {
+      _output += colSep + 'hideBefore' +  colSep + 'hideAfter';
+    }
+    return _output;
+  }
+  private getRowByIndex(index: number, lineSep : string, colSep : string) : string {
+    let _output = '';
+
+    if (typeof this.options[index]) {
+      _output = lineSep + this.options[index].value +
+                colSep  + this.options[index].label +
+                colSep  + this.options[index].default +
+                colSep  + this.options[index].show;
+
+      if (this.allowGroup) {
+        _output += colSep + this.options[index].group;
+      }
+      if (this.allowHideByDate) {
+        _output += colSep + this.options[index].hideBefore +
+                   colSep + this.options[index].hideAfter;
+      }
+    }
+
+    return _output;
+  }
+
+  public getData(lineSep : string = '\n', colSep : string = '') : string {
+    const _sep = (colSep !== '')
+      ? colSep
+      : this._importSep;
+    let _output = '';
+
+    let _line = '';
+
+    for (let a = 0; a < this.options.length; a += 1) {
+      _output += this.getRowByIndex(a, _line, _sep);
+      _line = lineSep;
+    }
+
+    return _output;
+  }
+
+  public getDataWithHeader(lineSep : string = '\n', colSep : string = '') : string {
+    const _sep = (colSep !== '')
+      ? colSep
+      : this._importSep;
+
+    return this._getHeader(_sep) + lineSep + this.getData(lineSep, _sep);
+  }
+
+  /**
+   * Parse separated value text into a list of `ISingleInputOption`s
+   *
+   * @returns An array of `ISingleInputOption`s
+   */
+  private _parseImport() : Array<ISingleInputOption> {
+    const output : Array<ISingleInputOption> = [];
+    const _tmp : Array<Array<string>> = [];
+    this._importIsValid = false;
+    console.group('_parseImport()')
+
+    if (this._importData.trim() === '') {
+      // Nothing to do so lets get out of here
+      console.log('Nothing to do')
+      console.groupEnd();
+      return output;
+    }
+
+    const sep = (this._importSep !== '')
+      ? this._importSep
+      : '\t';
+    const _tmp1 = this._importData.split('\n');
+
+    for (let a = 0; a < _tmp1.length; a += 1) {
+      if (_tmp1[a].trim() !== '') {
+        const _tmp2 : Array<string> = _tmp1[a].split(sep);
+        const _tmp3 : Array<string> = [];
+
+        for (let b = 0; b < _tmp2.length; b += 1) {
+          _tmp3.push(_tmp2[b].trim().replace(/\s+/g, ' '));
+          if (b > 10) {
+            // We only want seven columns.
+            // If they can't get it right in eleven we'll
+            // give up for this row
+            continue;
+          }
+        }
+
+        _tmp.push(_tmp3);
+      }
+    }
+
+    let _start = 0;
+    let _cols : IObjNum = {
+      value : 0,
+      label : 1,
+      default : 2,
+      show : 3,
+      group : 4,
+      hideBefore : 5,
+      hideAfter : 6
+    }
+
+    if (this._importHasHeader) {
+      // Try and process the header row
+
+      // Start processing data at the second row
+      _start = 1;
+      // reset cols to make sure we don't get anything we don't want
+      _cols = {
+        value : -1,
+        label : -1,
+        default : -1,
+        show : -1,
+        group : -1,
+        hideBefore : -1,
+        hideAfter : -1
+      }
+
+      for (let a = 0; a < _tmp[0].length; a += 1) {
+        switch (_tmp[0][a].toLowerCase()) {
+          case 'value':
+            _cols.value = a;
+            break;
+          case 'label':
+            _cols.label = a;
+            break;
+          case 'default':
+          case 'selected':
+          case 'checked':
+            _cols.default = a;
+            break;
+          case 'visable':
+          case 'show':
+            _cols.show = a;
+            break;
+          case 'group':
+            _cols.group = a;
+            break;
+          case 'hidebefore':
+            _cols.hideBefore = a;
+            break;
+          case 'hideafter':
+            _cols.hideAfter = a;
+            break;
+        }
+      }
+    }
+
+    if (_cols.value === -1 || _cols.label === -1) {
+      // we don't have enough info to keep going
+      console.log('no column data')
+      console.groupEnd();
+      return output;
+    }
+    const _uniqueValues : Array<string> = [];
+    const _uniqueLabels : Array<string> = [];
+
+    for (let a = _start; a < _tmp.length; a += 1) {
+      const _opt : ISingleInputOption = {
+        value: this._getStr(_tmp, a, _cols.value, 128),
+        label: this._getStr(_tmp, a, _cols.label, 512),
+        default: this._str2bool(this._getStr(_tmp, a, _cols.default, 4)),
+        show: this._str2bool(this._getStr(_tmp, a, _cols.show, 4)),
+        group: this._getStr(_tmp, a, _cols.group).substring(0, 64),
+        hideBefore: this._getValidDate(this._getStr(_tmp, a, _cols.hideBefore, 64)),
+        hideAfter: this._getValidDate(this._getStr(_tmp, a, _cols.hideAfter, 64)),
+        error: ''
+      }
+
+      if (_opt.value === '' && _opt.label !== '') {
+        _opt.value = _opt.label;
+      } else if (_opt.value !== '' && _opt.label === '') {
+        _opt.label = _opt.value;
+      }
+
+      // Make sure the option is usable and unique
+      if (_opt.value !== '' &&
+          _opt.label !== '' &&
+         (this.allowDuplicate === true ||
+         (_uniqueValues.indexOf(_opt.value) === -1 &&
+          _uniqueLabels.indexOf(_opt.label) === -1))
+      ) {
+        // We have enough to be going on with
+        output.push(_opt);
+
+        // Add label and value to the list of unique
+        _uniqueValues.push(_opt.value);
+        _uniqueLabels.push(_opt.label);
+      }
+    }
+
+    this._importIsValid = (output.length > 0);
+
+    console.log('this._importIsValid:', this._importIsValid)
+    console.log('output:', output)
+    console.groupEnd();
+    // Give back what we have
+    return output;
+  }
+
 
   //  END:  Helper methods
   // ======================================================
@@ -568,6 +860,8 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
           : '',
         value: input.value
       }
+      // console.log('input.id:', input.id)
+      // console.log('_output:', _output)
 
       switch(_output.action) {
         case 'toggle':
@@ -615,20 +909,44 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
           this.showHideAfter = !this.showHideAfter;
           break;
 
-        case 'importModal':
+        case 'showImportModal':
           this._showImportModal = !this._showImportModal;
           break;
 
-        case 'importSep':
-          this._importSep = _output.value;
+        case 'updateImportSep':
+          if (_output.value.substring(0, 1) === '\\') {
+            switch (_output.value.toLowerCase()) {
+              case '\\t':
+                this._importSep = '\t';
+                break;
+              case '\\n':
+                this._importSep = '\n';
+                break;
+              case '\\r':
+                this._importSep = '\r';
+                break;
+              case '\\l':
+                this._importSep = '\l';
+                break;
+              }
+          } else {
+            // I don't know why you'd need or want more than one or
+            // two characters but just in case I'm allowing up to ten
+            this._importSep = _output.value.substring(0, 10);
+          }
           break;
 
-        case 'importHasHead':
+        case 'toggleImportHasHead':
           this._importHasHeader = !this._importHasHeader;
           break;
 
-        case 'importData':
+        case 'updateImportData':
           this._importData = _output.value;
+          break;
+
+        case 'validateImport':
+          console.log('about to validate import data')
+          this._parseImport();
           break;
 
         case 'importAppend':
@@ -675,7 +993,6 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
    * Toggle show/hide status of the specified option.
    *
    * @param index Index of option to be deleted
-   * @param prop  Which option property should be updated
    *
    * @returns TRUE if option's property was updated, FALSE otherwise
    */
@@ -901,135 +1218,6 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
   }
 
   /**
-   * Parse separated value text into a list of `ISingleInputOption`s
-   *
-   * @returns An array of `ISingleInputOption`s
-   */
-  private _parseImport() : Array<ISingleInputOption> {
-    const output : Array<ISingleInputOption> = [];
-    const _tmp : Array<Array<string>> = [];
-
-    if (this._importData.trim() !== '') {
-      // Nothing to do so lets get out of here
-      return output;
-    }
-
-    const sep = (this._importSep !== '')
-      ? this._importSep
-      : '\t';
-    const _tmp1 = this._importData.split('\n');
-
-    for (let a = 0; a < _tmp1.length; a += 1) {
-      if (_tmp1[a].trim() !== '') {
-        const _tmp2 : Array<string> = _tmp1[a].split(sep);
-        const _tmp3 : Array<string> = [];
-
-        for (let b = 0; b < _tmp2.length; b += 1) {
-          _tmp3.push(_tmp2[b].trim().replace(/\s+/g, ' '));
-
-          if (b > 10) {
-            // We only want seven columns.
-            // If they can't get it right in eleven we'll
-            // give up for this row
-            continue;
-          }
-        }
-
-        _tmp.push(_tmp3);
-      }
-    }
-
-    let _start = 0;
-    let _cols : IObjNum = {
-      value : 0,
-      label : 1,
-      default : 2,
-      show : 3,
-      group : 4,
-      hideBefore : 5,
-      hideAfter : 6
-    }
-
-    if (this._importHasHeader) {
-      // Try and process the header row
-
-      // Start processing data at the second row
-      _start = 1;
-      // reset cols to make sure we don't get anything we don't want
-      _cols = {
-        value : -1,
-        label : -1,
-        default : -1,
-        show : -1,
-        group : -1,
-        hideBefore : -1,
-        hideAfter : -1
-      }
-
-      for (let a = 0; a < _tmp[0].length; a += 1) {
-        switch (_tmp[0][a].toLowerCase()) {
-          case 'value':
-            _cols.value = a;
-            break;
-          case 'label':
-            _cols.label = a;
-            break;
-          case 'default':
-          case 'selected':
-          case 'checked':
-            _cols.default = a;
-            break;
-          case 'visable':
-          case 'show':
-            _cols.show = a;
-            break;
-          case 'group':
-            _cols.group = a;
-            break;
-          case 'hidebefore':
-            _cols.hideBefore = a;
-            break;
-          case 'hideafter':
-            _cols.hideAfter = a;
-            break;
-        }
-      }
-    }
-
-    if (_cols.value === -1 || _cols.label === -1) {
-      // we don't have enough info to keep going
-      return output;
-    }
-
-    for (let a = _start; a < _tmp.length; a += 1) {
-      const _opt : ISingleInputOption = {
-        value: this._getStr(_tmp, a, _cols.value, 128),
-        label: this._getStr(_tmp, a, _cols.label, 512),
-        default: this._str2bool(this._getStr(_tmp, a, _cols.default, 4)),
-        show: this._str2bool(this._getStr(_tmp, a, _cols.show, 4)),
-        group: this._getStr(_tmp, a, _cols.group).substring(0, 64),
-        hideBefore: this._getValidDate(this._getStr(_tmp, a, _cols.hideBefore, 64)),
-        hideAfter: this._getValidDate(this._getStr(_tmp, a, _cols.hideAfter, 64)),
-        error: ''
-      }
-
-      if (_opt.value === '' && _opt.label !== '') {
-        _opt.value = _opt.label;
-      } else if (_opt.value !== '' && _opt.label === '') {
-        _opt.label = _opt.value;
-      }
-
-      if (_opt.value !== '' && _opt.label !== '') {
-        // We have enough to be going on with
-        output.push(_opt);
-      }
-    }
-
-    // Give back what we have
-    return output;
-  }
-
-  /**
    * Import option fields as delimited text
    *
    * @param mode Append to or Replace current options
@@ -1037,21 +1225,51 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
    * @returns TRUE if options were imported. FALSE otherwise
    */
   private _import(mode: string) : boolean {
-    const data = this._parseImport();
+    const data : Array<ISingleInputOption> = this._parseImport();
+    let _ok = false;
 
     if (data.length > 0) {
       if (mode === 'append') {
-        this.options = [
-          ...this.options,
-          ...data
-        ];
+        const _tmp : Array<ISingleInputOption> = [];
+        const _uniqueValues : Array<string> = [];
+        const _uniqueLabels : Array<string> = [];
+
+        for (let a = 0; a < this.options.length; a += 1) {
+          if (this.allowDuplicate ||
+             (_uniqueValues.indexOf(this.options[a].value) === -1 &&
+              _uniqueLabels.indexOf(this.options[a].label) === -1)
+          ) {
+            _uniqueValues.push(this.options[a].value)
+            _uniqueLabels.push(this.options[a].label)
+            _tmp.push(this.options[a]);
+          }
+        }
+        for (let a = 0; a < data.length; a += 1) {
+          if (this.allowDuplicate ||
+             (_uniqueValues.indexOf(data[a].value) === -1 &&
+              _uniqueLabels.indexOf(data[a].label) === -1)
+          ) {
+            _uniqueValues.push(data[a].value)
+            _uniqueLabels.push(data[a].label)
+            _tmp.push(data[a]);
+            _ok = true;
+          }
+        }
+
+        if (_ok === true) {
+          this.options = _tmp;
+        }
       } else {
+        _ok = true
         this.options = data;
       }
 
-      return true;
+      if (_ok === true) {
+        this.requestUpdate();
+        this._showImportModal = false
+      }
     }
-    return false;
+    return _ok;
   }
 
 
@@ -1169,9 +1387,11 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
       : html`<p><em>No options</em></p>`;
   }
 
+
   //  END:  Readonly render methods
   // ======================================================
   // START: Editable render methods
+
 
   /**
    * Get the HTML for the contents of a text field (in edit mode)
@@ -1349,7 +1569,7 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
         </ul>
     ${addBtn}
     <div class="extra-controls">
-      <button id="${this.id}____0__sort" @click=${handler}>Sort options</button>
+      <button id="${this.id}____0__sort" @click=${handler} title="Sort options alphabetically by label">Sort options</button>
       ${(this.allowGroup)
         ? html`
             <button id="${this.id}____0__groupShow" @click=${handler}>
@@ -1372,7 +1592,7 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
       }
       ${(!this.alllowImport)
         ? html`
-            <button id="${this.id}____0__importModal" @click=${handler}>
+            <button id="${this.id}____0__showImportModal" @click=${handler}>
               Import
             </button>`
         : ''
@@ -1414,7 +1634,75 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
     return html`<p><label for="demo">Demo:</label> ${demo}</p>`;
   }
 
+
   //  END:  Demo render methods
+  // ======================================================
+  // START: Import render methods
+
+  private _getImportBtn(id: string, action: string, label: string, handler: Function) : TemplateResult {
+    return html`
+      <button id="${id}${action}" @click=${handler}>${label}</button>
+    `;
+  }
+
+  private _renderImportUI() : TemplateResult {
+    const _id = this.id + '____0__';
+    const handler = this._getHandler();
+
+    let _sep = this._importSep;
+    switch (_sep) {
+      case '\t':
+        _sep = '\\t';
+        break;
+      case '\n':
+        _sep = '\\n';
+        break;
+      case '\r':
+        _sep = '\\r';
+        break;
+      case '\l':
+        _sep = '\\l';
+        break;
+    }
+
+    return html`
+      <button id="${this.id}____1__showImportModal" class="close-bg" @click=${handler}>Close import</button>
+      <section class="import-ui">
+        <button id="${this.id}____2__showImportModal" class="close" @click=${handler}>Close</button>
+        <div class="import-ui-inner">
+          <h2 class="import-ui__head">Import options</h2>
+          <p class="import-dep__wrap">
+            <label for="${_id}updateIportSep">Column seperator</label>
+            <input type="text"
+                  id="${_id}importSep"
+                  name="${_id}importSep"
+                  class="import-sep-input"
+                  value="${_sep}"
+                  maxlength="10"
+                  @change=${handler} />
+            <button id="${_id}toggleImportHasHead" @click=${handler}>
+              Import ${(this._importHasHeader) ? 'has' : 'does not include'} header row
+            </button>
+          </p>
+          <p class="import-data__wrap">
+            <label for="${_id}updateImportData" class="import-data__label">Separated value text (e.g. TSV or CSV)</label>
+            <textarea id="${_id}updateImportData" name="${_id}updateImportData" @change=${handler} class="import-data__input">${this.getDataWithHeader()}</textarea>
+          </p>${(this._importData.trim() !== '')
+            ? html`
+            <p class="import-buttons_wrap">
+              ${this._getImportBtn(_id, 'validateImport', 'Validate import data', handler)}
+              ${this._getImportBtn(_id, 'importAppend', 'Add imported options to existing list', handler)}
+              ${this._getImportBtn(_id, 'importReplace', 'Replace all existing options', handler)}
+            </p>`
+            : ''
+          }
+        </div>
+      </section>
+    `;
+  }
+
+
+  //  END:  Import render methods
   // ======================================================
   // START: Shared render methods
 
@@ -1494,7 +1782,12 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
       ${(this.readonly)
         ? this._renderReadOnly()
         : this._renderEditable()
-      }`;
+      }
+      ${(this._showImportModal)
+        ? this._renderImportUI()
+        : ''
+      }
+    `;
   }
 
 

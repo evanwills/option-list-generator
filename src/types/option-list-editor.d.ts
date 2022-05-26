@@ -11,14 +11,14 @@ export interface ISingleInputOption {
   /**
    * Human readable label for the option (what users see)
    */
-  label : string|number,
+  label : string,
   /** Whether or not this option will be rendered for end users */
   show : boolean,
   /**
    * The value of the option
    * (Also used as the label for the option if the label is empty)
    */
-  value : string|number,
+  value : string,
   /**
    * ISO 8601 date/time string
    * Allows users to provide a date, before which, the option is
