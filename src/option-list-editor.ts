@@ -145,17 +145,17 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
   /**
    * Whether or not import modal should be visible
    */
-  private _showImportModal : boolean = true;
+  private _showImportModal : boolean = false;
 
   /**
    * Whether or not import data includes header row
    */
-  private _importHasHeader : boolean = true;
+  private _importHasHeader : boolean = false;
 
   /**
    * Whether or not import data is valid
    */
-  private _importIsValid : boolean = true;
+  private _importIsValid : boolean = false;
 
   /**
    * Import data TSV/CSV text
@@ -200,29 +200,58 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
 
   static styles = css`
   :host {
-    --ri-border-radius: var(0.9rem);
-
     --wc-font-size: 1rem;
-    --wc-border-radius: var(--border-radius, var(--ri-border-radius));
-    --wc-text-colour: #000;
+    --wc-border-radius: 0.9rem;
+    /* --wc-text-colour: rgb(0, 0, 0); */
+    --wc-text-colour: rgb(255, 255, 255);
     --wc-bg-colour: #2d2b2b;
-    --wc-error-bg-colour: var(--error-bg-colour, rgb(150, 0, 0));
-    --wc-error-text-colour: var(--error-text-colour, rgb(255, 255, 255));
+
     --wc-line-width: 0.075rem;
     --wc-max-width: 30rem;
-    --wc-default-input-font: 'Courier New', Courier, monospace;
-    --wc-input-font: var(--default-input-font, var(--wc-default-input-font));
+
+    --wc-error-bg-colour: rgb(150, 0, 0);
+    --wc-error-text-colour: rgb(255, 255, 255);
+
+    --wc-font: Arial, Helvetica, sans-serif;
+    --wc-heading-font: Verdana, Geneva, Tahoma, sans-serif;
+    --wc-input-font: 'Courier New', Courier, monospace;
+
     --wc-outline-width: 0.25rem;
     --wc-outline-style: dotted;
     --wc-outline-offset: 0.2rem;
 
     font-size: var(--wc-font-size);
-    background-color: var(--wc-bg-colour, inherit);
-    color:  var(--wc-text-colour, inherit);
+    background-color: var(--wc-bg-colour);
+    color:  var(--wc-text-colour);
     font-family: inherit;
-    font-size: inherit;
+    font-size: inherit;s
     --font-family: Arial, Helvetica, sans-serif;
     font-family: var(--font-family);
+    background-color: var(--wc-bg-colour);
+  }
+  * {
+    background-color: var(--wc-bg-colour);
+    color: var(--wc-text-colour);
+    font-family: var(--wc-font);
+    box-sizing: border-box;
+  }
+  .whole {
+    position: relative;
+    padding-bottom: 2rem;
+  }
+  h1, h2, h3, h4 {
+    font-family: var(--wc-heading-font);
+  }
+  button {
+    border-radius: var(--wc-border-radius);
+    border-width: var(--wc-line-width);
+    border-color: var(--wc-text-colour);
+    padding: 0.3rem 0.5rem;
+    display: inline-block;
+  }
+  input , textarea {
+    padding: 0.3rem 0.5rem;
+    font-family: var(--wc-input-font);
   }
   .sr-only {
     border: 0;
@@ -250,7 +279,7 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
                          'pos toggle move'
                          'pos date move';
     grid-template-columns: 1.5rem 1fr 6rem;
-    column-gap: 0.4rem;
+    column-gap: 0.6rem;
     /* row-gap: 0.4rem; */
   }
   li.is-shown::before {
@@ -259,7 +288,7 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
   li::before {
     grid-area: pos;
     text-align: right;
-    /* padding-top: 0.1rem; */
+    padding-top: 0.2rem;
     padding-right: 0.3rem;
   }
   li.is-hidden::before {
@@ -279,19 +308,23 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
   .label {
     display: inline-block;
     text-transform: capitalize;
-    width: 3rem;
   }
   .label::after {
     content: ':';
   }
   .input {
-    width: calc(100% - 4rem);
-    font-family: 'Courier New', Courier, monospace;
-  display: inline-block;
-  }
-  .toggle-btn {
-    text-transform: capitalize;
     display: inline-block;
+    font-family: 'Courier New', Courier, monospace;
+  }
+  .label--value { width: 3rem; }
+  .input--value { width: calc(100% - 3.3rem); }
+  .label--label { width: 2.8rem; }
+  .input--label { width: calc(100% - 3.1rem); }
+  .label--group { width: 3.2rem; }
+  .input--group { width: calc(100% - 4rem); }
+  .toggle-btn {
+    display: inline-block;
+    text-transform: capitalize;
     margin-right: 1rem;
   }
   .toggle-btn:last-child {
@@ -319,6 +352,7 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
   .move-block {
     grid-area: move;
     align-self: center;
+    /* padding-left: 0.3rem; */
   }
   .move-block > button {
     display: inline-block;
@@ -327,6 +361,22 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
   }
   .move-block > button:first-child {
     margin-top: 0;
+  }
+  .is-middle .move-block > button:first-child {
+    border-top-left-radius: calc(var(--wc-border-radius) * 3);
+    border-top-right-radius: calc(var(--wc-border-radius) * 3);
+    border-bottom-right-radius: 0;
+    border-bottom-left-radius: 0;
+    border-bottom-width: calc(var(--wc-line-width / 2));
+    margin-bottom: calc(var(--wc-line-width * -1));
+  }
+  .is-middle .move-block > button:last-child {
+    margin-top: 0;
+    border-top-width: calc(var(--wc-line-width / 2));
+    border-bottom-left-radius: calc(var(--wc-border-radius) * 3);
+    border-bottom-right-radius: calc(var(--wc-border-radius) * 3);
+    border-top-right-radius: 0;
+    border-top-left-radius: 0;
   }
   .hide-block .label {
     display: inline-block;
@@ -349,21 +399,22 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
   }
   .close {
     position: absolute;
-    top: -0.5rem;
-    right: -0.5rem;
+    top: -0.75rem;
+    right: -1.5rem;
   }
   .import-ui {
+    border-radius: calc(var(--wc-border-radius) * 0.8);
     background-color: var(--wc-bg-colour);
     box-shadow: 0.5rem 0.5rem 1.5rem rgba(0, 0, 0, 0.8);
     border: var(--wc-line-width) solid var(--wc-text-colour);
-    bottom: 4rem;
     /* display: flex; */
     left: 4rem;
     /* min-height: 30rem; */
     padding: 1rem;
     position: fixed;
     right: 4rem;
-    top: 4rem;
+    top: 50%;
+    transform: translateY(-50%);
     z-index: 110;
   }
   .import-ui-inner {
@@ -376,6 +427,7 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
       "sample controls"
       "sample results"; */
     /* grid-gap: 1rem; */
+    position: relative;
   }
   .import-sep-input {
     display: inline-block;
@@ -387,14 +439,40 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
   }
   .import-data__label {
     display: block;
+    padding-bottom: 0.3rem;
   }
   .import-data__input {
     display: block;
-    width: calc(100% - 0.5rem);
+    width: 100%;
     height: 20rem;
   }
   .import-ui__head {
     margin: 0;
+  }
+  .add {
+    position: absolute;
+    bottom: 0.5rem;
+    left: 0.5rem;
+  }
+  .extra-controls {
+    position: absolute;
+    bottom: 0.5rem;
+    right: 0.5rem;
+  }
+  .extra-controls > button {
+    margin-left: 1rem;
+  }
+  .demo {
+    padding: 0.5rem;
+    border: var(--wc-line-width) solid var(--wc-bg-colour);
+  }
+  .demo, .demo * {
+    background-color: var(--wc-text-colour);
+    color: var(--wc-bg-colour);
+  }
+  .demo select {
+    border: var(--wc-line-width) solid var(--wc-bg-colour);
+
   }
   @media screen and (min-width: 48rem) {
     .has-value {
@@ -429,12 +507,6 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
                            'pos  date   date   date  move'
                            'pos toggle toggle toggle move';
       grid-template-columns: 1.5rem 0.6fr 1.8fr 0.6fr 6rem;
-    }
-    .value-block {
-      padding-right: 0.5rem;
-    }
-    .group-block {
-      padding-left: 0.5rem;
     }
   }
   `;
@@ -931,6 +1003,7 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
           break;
 
         case 'updateImportData':
+          this._importIsValid = false;
           this._importData = _output.value;
           break;
 
@@ -1122,11 +1195,33 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
    *           1 if item should move down the list or
    *           0 if item should not move
    */
-  private _sortInner(a: ISingleInputOption, b: ISingleInputOption) : number {
+   private _sortInnerLabel(a: ISingleInputOption, b: ISingleInputOption) : number {
     const _labelA = (a.label as string).toLowerCase()
     const _labelB = (b.label as string).toLowerCase()
-    const _groupA = (b.label as string).toLowerCase()
-    const _groupB = (b.label as string).toLowerCase()
+
+    if (_labelA < _labelB) {
+      return -1;
+    } else if (_labelA > _labelB) {
+      return 1;
+    } else {
+      return 0;
+    }
+  }
+  /**
+   * Sorting function used to sort options
+   *
+   * @param a First item to compare
+   * @param b Second item to compare
+   *
+   * @returns -1 if option should move up the list,
+   *           1 if item should move down the list or
+   *           0 if item should not move
+   */
+  private _sortInnerGroupLabel(a: ISingleInputOption, b: ISingleInputOption) : number {
+    const _labelA = (a.label as string).toLowerCase()
+    const _labelB = (b.label as string).toLowerCase()
+    const _groupA = (a.group as string).toLowerCase()
+    const _groupB = (b.group as string).toLowerCase()
 
     if (_groupA < _groupB) {
       return -1;
@@ -1149,9 +1244,13 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
    * @returns TRUE if options were sorted
    */
   private _sort() : boolean {
-    let _options = [...this.options];
+    const _options = [...this.options];
+    const _sorter = (this.showGroup)
+      ? this._sortInnerGroupLabel
+      : this._sortInnerLabel;
 
-    _options.sort(this._sortInner);
+    _options.sort(_sorter);
+
     this.options = _options
 
     return true;
@@ -1256,6 +1355,7 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
       if (_ok === true) {
         this.requestUpdate();
         this._showImportModal = false
+        this._importData = '';
       }
     }
     return _ok;
@@ -1290,8 +1390,8 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
     }
     return html`
       <div class="hide-block hide${which}-block">
-        <span class="label">Hide <span class="sr-only">option ${pos}</span> ${which}</span>
-        <span class="input">${_value}"
+        <span class="label label--${which}">Hide <span class="sr-only">option ${pos}</span> ${which}</span>
+        <span class="input input--${which}">${_value}"
                 class="input"
                 placeholder="Hide option ${pos} ${which}" />
       </div>`;
@@ -1312,8 +1412,8 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
     return (show === true)
       ? html`
           <div class="${which}-block">
-            <span class="label"><span class="sr-only">Option ${pos}</span> ${which}</span>
-            <span class="input">${value}</span>
+            <span class="label label--${which}"><span class="sr-only">Option ${pos}</span> ${which}</span>
+            <span class="input input--${which}">${value}</span>
           </div>`
       : '';
   }
@@ -1396,11 +1496,11 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
     return (show === true)
       ? html`
         <div class="${which}-block">
-          <label for="${id}${which}" class="label"><span class="sr-only">Option ${pos}</span> ${which}</label>
+          <label for="${id}${which}" class="label label--${which}"><span class="sr-only">Option ${pos}</span> ${which}</label>
           <input type="text"
                  id="${id}update__${which}"
                 .value="${value}"
-                 class="input"
+                 class="input input--${which}"
                  placeholder="Option ${pos} ${which}"
                 @change=${handler} />
         </div>`
@@ -1432,12 +1532,12 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
     }
 
     return html`
-        <div class="hide-block hide${which}-block" class="label">
+        <div class="hide-block hide${which}-block" class="label label--${which}">
           <label for="${id}hide${which}" class="label">Hide <span class="sr-only">option ${pos}</span> ${which}</label>
           <input type="datetime-local"
                 id="${id}update__hide${which}"
                .value="${_value}"
-                class="input"
+                class="input input--${which}"
                 placeholder="Hide option ${pos} ${which}"
                @change=${handler} />
         </div>`;
@@ -1504,8 +1604,12 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
       const pos = index + 1;
       const _id = data.id + '____' + index + '__';
 
+      const _isMid = (index > 0 && (pos < data.options.length))
+        ? ' is-middle'
+        : '';
+
       return html`
-        <li class="cols-${data._colCount} is-${(option.show) ? 'shown' : 'hidden'}${(data.readonly ? 'is-readonly' : '')}${data._getColClass()}">
+        <li class="cols-${data._colCount} is-${(option.show) ? 'shown' : 'hidden'}${(data.readonly ? 'is-readonly' : '')}${data._getColClass()}${_isMid}">
 
           ${data._getEditableTextField(option.value as string, 'value', pos, _id, !data.hideValue, handler)}
           ${data._getEditableTextField(option.label as string, 'label', pos, _id, true, handler)}
@@ -1542,45 +1646,48 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
    *          message saying there are no options
    */
   private _renderEditable() : TemplateResult {
-    const handler = this._getHandler();
-    const addBtn = (this._okToAdd())
-      ? html`<button id="${this.id}____0__add" @click=${handler}>
+    const _handler = this._getHandler();
+    const _addBtn = (this._okToAdd())
+      ? html`<button id="${this.id}____0__add" @click=${_handler} class="add">
         Add ${(this.options.length === 0)
           ? 'first'
           : 'another'
         } option</button>`
       : '';
+    const _sortTitle = this.showGroup
+        ? 'group then '
+        : '';
 
     return html`
         <ul>
           ${repeat(this.options, item => item.value, this._getSingleEditableOption())}
         </ul>
-    ${addBtn}
+    ${_addBtn}
     <div class="extra-controls">
-      <button id="${this.id}____0__sort" @click=${handler} title="Sort options alphabetically by label">Sort options</button>
+      <button id="${this.id}____0__sort" @click=${_handler} title="Sort options alphabetically by ${_sortTitle}label">Sort options</button>
+      <button id="${this.id}____0__valueShow" @click=${_handler}>
+        ${(!this.hideValue) ? 'Hide' : 'Show'} value input
+      </button>
       ${(this.allowGroup)
         ? html`
-            <button id="${this.id}____0__groupShow" @click=${handler}>
+            <button id="${this.id}____0__groupShow" @click=${_handler}>
               ${(this.showGroup) ? 'Hide' : 'Show'} Group input
             </button>`
         : ''
       }
-      <button id="${this.id}____0__valueShow" @click=${handler}>
-        ${(!this.hideValue) ? 'Hide' : 'Show'} value input
-      </button>
       ${(this.allowHideByDate)
         ? html`
-        <button id="${this.id}____0__hideBeforeShow" @click=${handler}>
+        <button id="${this.id}____0__hideBeforeShow" @click=${_handler}>
           ${(this.showHideBefore) ? 'Hide' : 'Show'} hide before
         </button>
-        <button id="${this.id}____0__hideAfterShow" @click=${handler}>
+        <button id="${this.id}____0__hideAfterShow" @click=${_handler}>
           ${(this.showHideAfter) ? 'Hide' : 'Show'} hide after
         </button>`
         : ''
       }
       ${(!this.alllowImport)
         ? html`
-            <button id="${this.id}____0__showImportModal" @click=${handler}>
+            <button id="${this.id}____0__showImportModal" @click=${_handler}>
               Import
             </button>`
         : ''
@@ -1619,7 +1726,7 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
       default:
         demo = this._getDemoSelect();
     }
-    return html`<p><label for="demo">Demo:</label> ${demo}</p>`;
+    return html`<p class="demo"><label for="demo">Demo:</label> ${demo}</p>`;
   }
 
 
@@ -1674,16 +1781,21 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
           </p>
           <p class="import-data__wrap">
             <label for="${_id}updateImportData" class="import-data__label">Separated value text (e.g. TSV or CSV)</label>
-            <textarea id="${_id}updateImportData" name="${_id}updateImportData" @change=${handler} class="import-data__input">${this.getDataWithHeader()}</textarea>
-          </p>${(this._importData.trim() !== '')
-            ? html`
-            <p class="import-buttons_wrap">
-              ${this._getImportBtn(_id, 'validateImport', 'Validate import data', handler)}
-              ${this._getImportBtn(_id, 'importAppend', 'Add imported options to existing list', handler)}
-              ${this._getImportBtn(_id, 'importReplace', 'Replace all existing options', handler)}
-            </p>`
-            : ''
+            <textarea id="${_id}updateImportData" name="${_id}updateImportData" @change=${handler} class="import-data__input">${(this._importHasHeader)
+                ? this.getDataWithHeader()
+                : this.getData()
+            }</textarea>
+          </p>
+          <p class="import-buttons_wrap">
+          ${(this._importData.trim() !== '')
+            ? (this._importIsValid)
+              ? html`
+                ${this._getImportBtn(_id, 'importAppend', 'Add imported options to existing list', handler)}
+                ${this._getImportBtn(_id, 'importReplace', 'Replace all existing options', handler)}`
+              : this._getImportBtn(_id, 'validateImport', 'Validate import data', handler)
+            : 'You must change the import data before you can validate it'
           }
+          </p>
         </div>
       </section>
     `;
@@ -1761,7 +1873,8 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
     this._init();
 
     return html`
-      ${(!this.hideDemo)
+      <div class="whole">
+        ${(!this.hideDemo)
         ? this._getDemo()
         : ''
       }
@@ -1773,6 +1886,7 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
         ? this._renderImportUI()
         : ''
       }
+      </div>
     `;
   }
 

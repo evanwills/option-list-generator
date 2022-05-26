@@ -7,30 +7,37 @@
     <title>&lt;option-list-editor&gt;(Vite + Lit App)</title>
     <script type="module" src="/src/option-list-editor.ts"></script>
 	<style>
-		:root {
+		option-list-editor {
 			--ri-border-radius: var(0.9rem);
 
 			--wc-font-size: 1rem;
 			--wc-border-radius: 0.9rem;
-			--wc-text-colour: rgb(0, 0, 0);
-			/* --wc-text-colour: rgb(255, 255, 255); */
+			/* --wc-text-colour: rgb(0, 0, 0); */
+			--wc-text-colour: rgb(255, 255, 255);
 			--wc-bg-colour: #2d2b2b;
-			--wc-error-bg-colour: rgb(150, 0, 0);
-			--wc-error-text-colour: rgb(255, 255, 255);
+
 			--wc-line-width: 0.075rem;
 			--wc-max-width: 30rem;
-			--wc-default-input-font: 'Courier New', Courier, monospace;
+
+			--wc-error-bg-colour: rgb(150, 0, 0);
+			--wc-error-text-colour: rgb(255, 255, 255);
+
+			--wc-font: Arial, Helvetica, sans-serif;
+			--wc-heading-font: Verdana, Geneva, Tahoma, sans-serif;
 			--wc-input-font: 'Courier New', Courier, monospace;
+
 			--wc-outline-width: 0.25rem;
 			--wc-outline-style: dotted;
 			--wc-outline-offset: 0.2rem;
+		}
+		* {
 		}
 	</style>
   </head>
   <body>
 
 	<h1>&lt;option-list-editor&gt;</h1>
-    <option-list-editor id="new">
+    <option-list-editor id="new" showgroup allowgroup>
 		<option value="evan" data-group="Wills">Evan</option>
 		<option value="ivan" data-group="Wills">Ivan</option>
 		<option value="tarrin" data-group="Wills">Tarrin</option>
