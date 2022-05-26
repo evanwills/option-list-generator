@@ -688,12 +688,9 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
     const output : Array<ISingleInputOption> = [];
     const _tmp : Array<Array<string>> = [];
     this._importIsValid = false;
-    console.group('_parseImport()')
 
     if (this._importData.trim() === '') {
       // Nothing to do so lets get out of here
-      console.log('Nothing to do')
-      console.groupEnd();
       return output;
     }
 
@@ -780,8 +777,6 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
 
     if (_cols.value === -1 || _cols.label === -1) {
       // we don't have enough info to keep going
-      console.log('no column data')
-      console.groupEnd();
       return output;
     }
     const _uniqueValues : Array<string> = [];
@@ -823,9 +818,6 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
 
     this._importIsValid = (output.length > 0);
 
-    console.log('this._importIsValid:', this._importIsValid)
-    console.log('output:', output)
-    console.groupEnd();
     // Give back what we have
     return output;
   }
@@ -860,8 +852,6 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
           : '',
         value: input.value
       }
-      // console.log('input.id:', input.id)
-      // console.log('_output:', _output)
 
       switch(_output.action) {
         case 'toggle':
@@ -945,7 +935,6 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
           break;
 
         case 'validateImport':
-          console.log('about to validate import data')
           this._parseImport();
           break;
 
@@ -1336,7 +1325,6 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
    */
   private _getSingleReadonlyOption() {
     const data = this;
-    console.log('data:', data)
 
     if (data.options.length === 0) {
       return
@@ -1771,8 +1759,6 @@ import { IEventData, ISingleInputOption, IObjNum } from './types/option-list-edi
    */
    render() : TemplateResult {
     this._init();
-
-    // console.log('this.warningCount:', this._warningCount);
 
     return html`
       ${(!this.hideDemo)
