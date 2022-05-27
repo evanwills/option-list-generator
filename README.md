@@ -136,15 +136,9 @@ When processing the options nested within the `<option-list-editor>` component, 
 * `showhideafter` - [boolean - Default: `FALSE`]<br />
             Whether or not "Hide after" date/time input field is shown.
 
-* `otheroptiontxt` - [boolean - Default: `FALSE`]<br />
-            Option for "Other" final option
-
-    *Other* option when you wish to allow users who don't 
-    like any of the predefined options to specify their own 
-    value
-
-* `otherfieldtxt` - [boolean - Default: `FALSE`]<br />
-            Label for "Other - please specify" input text field
+* `groupedLast` - [boolean - Default: `FALSE`]<br />
+            Whether or not to put grouped options after ungrouped 
+            options
 
 
 -----

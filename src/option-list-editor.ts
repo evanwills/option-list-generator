@@ -117,25 +117,10 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
   showHideAfter : boolean = false;
 
   /**
-   * Whether or not "Hide after" date/time input field is shown
+   * Whether or not to put grouped options after ungrouped options
    */
   @property({ type: Boolean })
   groupedLast : boolean = false;
-
-  /**
-   * Option for "Other" final option
-   *
-   * *Other* option when you wish to allow users who don't like any
-   * of the predefined options to specify their own value
-   */
-  @property({ reflect: true, type: String })
-  otherOptionTxt : string = '';
-
-  /**
-   * Label for "Other - please specify" input text field
-   */
-  @property({ reflect: true, type: String })
-  otherFieldTxt : string = '';
 
 
   //  END:  Attribute declarations
@@ -196,6 +181,8 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
   private _colCount : number = 2;
 
   private _groupNames : Array<string> = [];
+
+  private _firstIsEmpty : boolean = false;
 
   // private _canAdd : boolean = true;
   // private _focusIndex : number = -1;
@@ -273,14 +260,15 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
     white-space: nowrap;
     width: 1px;
   }
-  ul {
+  .single-option__wrap {
     list-style-type: none;
     padding: 0;
     margin: 0 0 1rem 0;
     counter-reset: option
   }
-  li {
-    margin-top: 1rem;
+  .single-option {
+    border-bottom: var(--wc-line-width) solid var(--wc-text-colour);
+    column-gap: 0.6rem;
     display: grid;
     grid-template-areas: 'pos value move'
                          'pos label move'
@@ -288,8 +276,9 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
                          'pos toggle move'
                          'pos date move';
     grid-template-columns: 1.5rem 1fr 6rem;
-    column-gap: 0.6rem;
-    /* row-gap: 0.4rem; */
+    /* margin-top: 1rem; */
+    padding: 1rem 0.5rem 1rem 0;
+    row-gap: 0.4rem;
   }
   li.is-shown::before {
     content: counter(option);
@@ -336,27 +325,35 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
     text-transform: capitalize;
     margin-right: 1rem;
   }
-  .toggle-btn:last-child {
+  /* .toggle-btn:last-child {
     margin-right: 0;
-  }
+  } */
   .value-block {
     grid-area: value;
     padding-bottom: 0.4rem;
   }
   .label-block {
     grid-area: label;
-    padding-bottom: 0.4rem;
+    /* padding-bottom: 0.4rem; */
   }
   .group-block {
     grid-area: group;
-    padding-bottom: 0.4rem;
+    /* padding-bottom: 0.4rem; */
   }
   .toggle-block {
     grid-area: toggle;
+    display: flex;
+    /* align-content: center; */
   }
+  .toggle-block > button {
+    align-self: center;
+  }
+
   .date-block {
-    grid-area: date;
-    padding-bottom: 0.4rem;
+    /* grid-area: date; */
+    /* padding-bottom: 0.4rem; */
+    flex-grow: 1;
+    text-align: center;
   }
   .move-block {
     grid-area: move;
@@ -387,9 +384,14 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
     border-top-right-radius: 0;
     border-top-left-radius: 0;
   }
+  .hide-block {
+    display: inline-block;
+    white-space: nowrap;
+  }
   .hide-block .label {
     display: inline-block;
     width: 6rem;
+    text-align: right;
   }
   .hide-block .input {
     display: inline-block;
@@ -474,6 +476,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
   .demo {
     padding: 0.5rem;
     border: var(--wc-line-width) solid var(--wc-bg-colour);
+    margin: 0;
   }
   .demo, .demo * {
     background-color: var(--wc-text-colour);
@@ -481,23 +484,33 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
   }
   .demo select {
     border: var(--wc-line-width) solid var(--wc-bg-colour);
-
   }
+  .demo-list {
+    list-style-type: none;
+    margin: 0;
+    padding: 0.5rem 0 0 0.5rem;
+  }
+  .demo-list > li {
+    margin: 0  1rem 0.5rem 0;
+    padding: 0;
+    display: inline-block;
+  }
+
   @media screen and (min-width: 48rem) {
     .has-value {
       grid-template-areas: 'pos value label move'
                            'pos toggle toggle move';
-      grid-template-columns: 1.5rem 0.5fr 1.5fr 6rem;
+      grid-template-columns: 1.5rem 0.4fr 1.6fr 6rem;
     }
     .has-group {
       grid-template-areas: 'pos label  group move'
                            'pos toggle toggle move';
-      grid-template-columns: 1.5rem 1.5fr 0.5fr 6rem;
+      grid-template-columns: 1.5rem 1.6fr 0.4fr 6rem;
     }
     .has-value-and-group {
       grid-template-areas: 'pos value  label  group  move'
                            'pos toggle toggle toggle move';
-      grid-template-columns: 1.5rem 0.6fr 1fr 0.6fr 6rem;
+      grid-template-columns: 1.5rem 0.5fr 1.5fr 0.5fr 6rem;
     }
     .has-value.has-date {
       grid-template-areas: 'pos value  label  move'
@@ -532,7 +545,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
    * Mostly validating attribute values and doing anything that would
    * normally be triggered by user input
    */
-   private _init() : void {
+  private _init() : void {
      if (this.doInit) {
       this.doInit = false;
 
@@ -619,20 +632,6 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
           this.showHideAfter = true;
         }
       }
-
-      // if (this.allowGroup) {
-      //   const optGrp = this.getElementsByTagName('optgroup');
-      //   for (let a = 0; a < optGrp.length; a += 1) {
-      //     console.log('optGrp[' + a + ']:', optGrp[a]);
-      //     const grpName = optGrp[a].label
-      //     const grpChildren = optGrp[a].getElementsByTagName('option');
-
-      //     for (let b = 0; b < grpChildren.length; b += 1) {
-
-      //     }
-
-      //   }
-      // }
 
       let c = 1;
       if (!this.hideValue) {
@@ -764,6 +763,13 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
       : '';
   }
 
+  /**
+   * Get the header row for output data as separated text
+   *
+   * @param colSep Character(s) used to separate column headers
+   *
+   * @returns Header row for output data
+   */
   private _getHeader(colSep : string) : string {
     let output = 'value' + colSep + 'label' + colSep + 'selected' + colSep + 'show';
 
@@ -775,10 +781,20 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
     }
     return output;
   }
+
+  /**
+   * Get data for a single option.
+   *
+   * @param index   Index of option whose data is to be returned
+   * @param lineSep Output line separator
+   * @param colSep  Output column separator
+   *
+   * @returns option data as separated text string
+   */
   private _getRowByIndex(index: number, lineSep : string, colSep : string) : string {
     let output = '';
 
-    if (typeof this.options[index]) {
+    if (typeof this.options[index] !== 'undefined') {
       output = lineSep + this.options[index].value +
                colSep  + this.options[index].label +
                colSep  + this.options[index].selected +
@@ -796,6 +812,17 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
     return output;
   }
 
+  /**
+   * Get option data as separate text
+   *
+   * By default this outputs Tab delimited text but can be
+   * configured to any sort of delimited format
+   *
+   * @param lineSep Output line separator
+   * @param colSep  Output column separator
+   *
+   * @returns option data as separated text string
+   */
   public getData(lineSep : string = '\n', colSep : string = '') : string {
     const sep = (colSep !== '')
       ? colSep
@@ -812,12 +839,82 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
     return output;
   }
 
+  /**
+   * Extract option data as string with header row
+   *
+   * @param lineSep Output line separator
+   * @param colSep  Output column separator
+   *
+   * @returns String th
+   */
   public getDataWithHeader(lineSep : string = '\n', colSep : string = '') : string {
     const sep = (colSep !== '')
       ? colSep
       : this._importSep;
 
     return this._getHeader(sep) + lineSep + this.getData(lineSep, sep);
+  }
+
+  /**
+   * Get list of options as JSON object
+   *
+   * @returns JSON for list of options.
+   */
+  public toJSON() : string {
+    return JSON.stringify(this.options);
+  }
+
+  /**
+   * Get the index for each columns relevant to input option detaions
+   *
+   * @param headerRow Header row of import data
+   *
+   * @returns Object whos keys match ISingleInputOption keys and
+   *          whose values match the column index in the import data
+   */
+  private _extractColumnIndexes(headerRow: Array<string>) : IInputOptionImportHead {
+
+    // reset cols to make sure we don't get anything we don't want
+    const cols = {
+      value : -1,
+      label : -1,
+      selected : -1,
+      show : -1,
+      group : -1,
+      hideBefore : -1,
+      hideAfter : -1
+    }
+
+    for (let a = 0; a < headerRow.length; a += 1) {
+      switch (headerRow[a].toLowerCase()) {
+        case 'value':
+          cols.value = a;
+          break;
+        case 'label':
+          cols.label = a;
+          break;
+        case 'default':
+        case 'selected':
+        case 'checked':
+          cols.selected = a;
+          break;
+        case 'visable':
+        case 'show':
+          cols.show = a;
+          break;
+        case 'group':
+          cols.group = a;
+          break;
+        case 'hidebefore':
+          cols.hideBefore = a;
+          break;
+        case 'hideafter':
+          cols.hideAfter = a;
+          break;
+      }
+    }
+
+    return cols;
   }
 
   /**
@@ -872,48 +969,10 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
 
     if (this._importHasHeader) {
       // Try and process the header row
+      cols = this._extractColumnIndexes(tmp[0]);
 
       // Start processing data at the second row
       start = 1;
-      // reset cols to make sure we don't get anything we don't want
-      cols = {
-        value : -1,
-        label : -1,
-        selected : -1,
-        show : -1,
-        group : -1,
-        hideBefore : -1,
-        hideAfter : -1
-      }
-
-      for (let a = 0; a < tmp[0].length; a += 1) {
-        switch (tmp[0][a].toLowerCase()) {
-          case 'value':
-            cols.value = a;
-            break;
-          case 'label':
-            cols.label = a;
-            break;
-          case 'default':
-          case 'selected':
-          case 'checked':
-            cols.selected = a;
-            break;
-          case 'visable':
-          case 'show':
-            cols.show = a;
-            break;
-          case 'group':
-            cols.group = a;
-            break;
-          case 'hidebefore':
-            cols.hideBefore = a;
-            break;
-          case 'hideafter':
-            cols.hideAfter = a;
-            break;
-        }
-      }
     }
 
     if (cols.value === -1 || cols.label === -1) {
@@ -962,6 +1021,38 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
     return output;
   }
 
+  /**
+   * Get valid import seperator from supplied string
+   *
+   * @param sep string to be used as column seperator
+   *
+   * @returns valid import separator.
+   */
+  private _getImportSep(sep : string) : string {
+    if (sep.substring(0, 1) === '\\') {
+      switch (sep.toLowerCase()) {
+        case '\\t':
+          this._importSep = '\t';
+          break;
+        case '\\n':
+          this._importSep = '\n';
+          break;
+        case '\\r':
+          this._importSep = '\r';
+          break;
+        case '\\l':
+          this._importSep = '\l';
+          break;
+        }
+    } else {
+      // I don't know why you'd need or want more than one or
+      // two characters but just in case I'm allowing up to ten
+      this._importSep = sep.substring(0, 10);
+    }
+
+    return this._importSep;
+  }
+
 
   //  END:  Helper methods
   // ======================================================
@@ -978,7 +1069,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
     const data = this;
     return (e: Event) => {
       const input = e.target as HTMLInputElement;
-      console.group('event handler')
+
       // Get only the bits of the ID that we need
       const bits = input.id.replace(/^.*?____(?=[0-9]+__[a-z]+)/i, '').split('__');
       let ok = false;
@@ -995,7 +1086,6 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
         field: '',
         value: ''
       }
-      console.log('bits[1]:', bits[1])
 
       switch(bits[1]) {
         case 'toggle':
@@ -1061,34 +1151,12 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
           break;
 
         case 'showImportModal':
-          console.log('toggling show/hide import modal')
-          console.log('this._showImportModal:', this._showImportModal)
           this._showImportModal = !this._showImportModal;
-          console.log('this._showImportModal:', this._showImportModal)
           this.requestUpdate();
           break;
 
         case 'updateImportSep':
-          if (output.value.substring(0, 1) === '\\') {
-            switch (output.value.toLowerCase()) {
-              case '\\t':
-                this._importSep = '\t';
-                break;
-              case '\\n':
-                this._importSep = '\n';
-                break;
-              case '\\r':
-                this._importSep = '\r';
-                break;
-              case '\\l':
-                this._importSep = '\l';
-                break;
-              }
-          } else {
-            // I don't know why you'd need or want more than one or
-            // two characters but just in case I'm allowing up to ten
-            this._importSep = output.value.substring(0, 10);
-          }
+          output.value = this._getImportSep(output.value);
           break;
 
         case 'toggleImportHasHead':
@@ -1122,16 +1190,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
         // Dispatch a change a event so outside world knows
         // something happened
         data.dispatchEvent(new Event('change'));
-        // } else {
-        //   // Reset event data
-        //   this.eventData = {
-        //     index: -1,
-        //     action: '',
-        //     field: '',
-        //     value: ''
-        //   };
       }
-      console.groupEnd()
     }
   }
 
@@ -1315,6 +1374,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
       return 0;
     }
   }
+
   /**
    * Sorting function used to sort options
    *
@@ -1330,6 +1390,10 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
     const labelB = (b.label as string).toLowerCase()
     const groupA = (a.group as string).toLowerCase()
     const groupB = (b.group as string).toLowerCase()
+
+    if (a.value === '') {
+      return -1;
+    }
 
     if (groupA < groupB) {
       return -1;
@@ -1552,8 +1616,6 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
         ${this._getReadonlyTextField(option.value as string, 'value', pos, !data.hideValue)}
         ${this._getReadonlyTextField(option.label as string, 'label', pos)}
         ${this._getReadonlyTextField(option.group as string, 'group', pos, data.showGroup)}
-        ${this._getReadonlyDateField(option.hideBefore, 'before', pos, data.showHideBefore)}
-        ${this._getReadonlyDateField(option.hideAfter, 'after', pos, data.showHideAfter)}
         <div class="toggle-block">
           ${(!data.hideHidden)
             ? html`
@@ -1565,6 +1627,8 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
           <span class="toggle-btn toggle-btn--selected">
             ${this._getSelectedLabel(option.selected, pos)}
           </span>
+          ${this._getReadonlyDateField(option.hideBefore, 'before', pos, data.showHideBefore)}
+          ${this._getReadonlyDateField(option.hideAfter, 'after', pos, data.showHideAfter)}
         </div>
       </li>`
     }
@@ -1644,6 +1708,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
    *          (or empty string if show is false)
    */
   private _getEditableDateField(value: string, which: string, pos : number, id: string, show: boolean, handler: Function) : TemplateResult|string {
+
     if (show === false) {
       return '';
     }
@@ -1654,11 +1719,13 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
       val = tmp.toLocaleString();
     }
 
+    const fieldID = id + 'update__hide' + which
+
     return html`
-        <div class="hide-block hide${which}-block" class="label label--${which}">
-          <label for="${id}hide${which}" class="label">Hide <span class="sr-only">option ${pos}</span> ${which}</label>
+        <div class="hide-block hide-block--${which}">
+        <label for="${id}" class="label label--${which}">Hide <span class="sr-only">option ${pos}</span> ${which}</label>
           <input type="datetime-local"
-                id="${id}update__hide${which}"
+                id="${fieldID}"
                .value="${val}"
                 class="input input--${which}"
                 placeholder="Hide option ${pos} ${which}"
@@ -1727,20 +1794,23 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
       const pos = index + 1;
       const id = data.id + '____' + index + '__';
 
-      const isMid = (index > 0 && (pos < data.options.length))
+      const start = (this._firstIsEmpty)
+        ? 1
+        : 0;
+
+      const isMid = (index > start && (pos < data.options.length))
         ? ' is-middle'
         : '';
 
+      const down = (index > 0 || option.value !== '')
+      const up = (index !== 1 || !this._firstIsEmpty)
+
       return html`
-        <li class="cols-${data._colCount} is-${(option.show) ? 'shown' : 'hidden'}${(data.readonly ? 'is-readonly' : '')}${data._getColClass()}${isMid}">
+        <li class="single-option cols-${data._colCount} is-${(option.show) ? 'shown' : 'hidden'}${(data.readonly ? 'is-readonly' : '')}${data._getColClass()}${isMid}">
 
           ${data._getEditableTextField(option.value as string, 'value', pos, id, !data.hideValue, handler)}
           ${data._getEditableTextField(option.label as string, 'label', pos, id, true, handler)}
-          ${data._getEditableTextField(option.group as string, 'group', pos, id, (data.allowGroup && data.showGroup), handler)}
-          <div class="date-block">
-            ${data._getEditableDateField(option.hideBefore, 'before', pos, id, (data.allowHideByDate && data.showHideBefore), handler)}
-            ${data._getEditableDateField(option.hideAfter, 'after', pos, id, (data.allowHideByDate && data.showHideAfter), handler)}
-          </div>
+          ${data._getEditableTextField(option.group as string, 'group', pos, id, (data.allowGroup && data.showGroup && option.value !== ''), handler)}
           <div class="toggle-block">
             ${(!data.hideHidden) ? data._getToggleBtn(id, option.show, 'show', pos, handler) : ''}
             ${data._getToggleBtn(id, option.selected, 'selected', pos, handler)}
@@ -1751,16 +1821,39 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
                   </button>`
               : ''
             }
+            <div class="date-block">
+              ${data._getEditableDateField(option.hideBefore, 'Before', pos, id, (data.allowHideByDate && data.showHideBefore), handler)}
+              ${data._getEditableDateField(option.hideAfter, 'After', pos, id, (data.allowHideByDate && data.showHideAfter), handler)}
+            </div>
           </div>
           <div class="move-block">
-            ${this._getMoveBtn(id, 'up', index, (index > 0), handler)}
-            ${this._getMoveBtn(id, 'down', index, (pos < data.options.length), handler)}
+            ${this._getMoveBtn(id, 'up', index, (up && (index > 0)), handler)}
+            ${this._getMoveBtn(id, 'down', index, (down && (pos < data.options.length)), handler)}
           </div>
         </li>
       `;
     }
   }
 
+  /**
+   * Get a button to do show/hide toggling;
+   *
+   * @param id      parent ID
+   * @param action  What is to be shown/hidden
+   * @param label   Label for thing that is to be shown/hidden
+   * @param show    Whether or not thing is in "Show" state
+   * @param handler Event hanlder function
+   *
+   * @returns A single button that performs an action
+   */
+  private _getShowHideBtn(id: string, action: string, label: string, show: boolean, handler: Function) : TemplateResult {
+    const str = (show === true)
+      ? 'Hide'
+      : 'Show';
+
+    return html`
+    <button id="${id}____0__${action}" @click=${handler}>${str} ${label}</button>`
+  }
 
   /**
    * Get a HTML for list of options in the component
@@ -1770,6 +1863,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
    */
   private _renderEditable() : TemplateResult {
     const handler = this._getHandler();
+    const id = this.id + '____0__';
     const addBtn = (this._okToAdd())
       ? html`<button id="${this.id}____0__add" @click=${handler} class="add">
         Add ${(this.options.length === 0)
@@ -1780,32 +1874,25 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
     const sortTitle = this.showGroup
         ? 'group then '
         : '';
+    this._firstIsEmpty = (this.options[0].value === '');
 
     return html`
-        <ul>
+        <ul class="single-option__wrap">
           ${repeat(this.options, item => item.value, this._getSingleEditableOption())}
         </ul>
     ${addBtn}
     <div class="extra-controls">
       <button id="${this.id}____0__sort" @click=${handler} title="Sort options alphabetically by ${sortTitle}label">Sort options</button>
-      <button id="${this.id}____0__valueShow" @click=${handler}>
-        ${(!this.hideValue) ? 'Hide' : 'Show'} value input
-      </button>
+      ${this._getShowHideBtn(id, 'valueShow', 'value input', this.hideValue, handler)}
       ${(this.allowGroup)
-        ? html`
-            <button id="${this.id}____0__groupShow" @click=${handler}>
-              ${(this.showGroup) ? 'Hide' : 'Show'} Group input
-            </button>`
+        ? this._getShowHideBtn(id, 'groupShow', 'group input', this.showGroup, handler)
         : ''
       }
       ${(this.allowHideByDate)
         ? html`
-        <button id="${this.id}____0__hideBeforeShow" @click=${handler}>
-          ${(this.showHideBefore) ? 'Hide' : 'Show'} hide before
-        </button>
-        <button id="${this.id}____0__hideAfterShow" @click=${handler}>
-          ${(this.showHideAfter) ? 'Hide' : 'Show'} hide after
-        </button>`
+          ${this._getShowHideBtn(id, 'hideBeforeShow', 'hide before', this.showHideBefore, handler)}
+          ${this._getShowHideBtn(id, 'hideAfterShow', 'hide after', this.showHideAfter, handler)}
+        `
         : ''
       }
       ${(this.alllowImport)
@@ -1823,6 +1910,13 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
   // ======================================================
   // START: Demo render methods
 
+  /**
+   * Get a single <OPTION> element
+   *
+   * @param option Option data for a single option
+   *
+   * @returns HTML for a single <OPTION> element
+   */
   private _getDemoOption(option: ISingleInputOption) : TemplateResult {
     return html`
       <option value="${option.value}" ?selected=${option.selected}>
@@ -1830,6 +1924,15 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
       </option>`
   }
 
+  /**
+   * Get all the options for a group wrapped in <OPTGROUP> tags
+   *
+   * @param optGroup Single option group containing a label & a list
+   *                 of options for that group
+   *
+   * @returns HTML for option group (or just list of options if not
+   *          part of a group)
+   */
   private _getDemoAllOptions(optGroup: IOptionGroup) : TemplateResult {
     const options = html`${repeat(optGroup.options, item => item.value, this._getDemoOption)}`;
 
@@ -1840,6 +1943,12 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
     }
   }
 
+  /**
+   * Get a select (dropdown) field with all the options listed in
+   * component
+   *
+   * @returns HTML template for <SELECT> field
+   */
   private _getDemoSelect()  : TemplateResult {
     let tmp = this.options.filter(
       (item : ISingleInputOption, index: number) => {
@@ -1895,17 +2004,55 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
     `;
   }
 
+  /**
+   * Get a list of checkable inputs
+   *
+   * @returns HTML Template for unordered list of radio or checkbox
+   *          inputs
+   */
+  private _getDemoCheckable() : TemplateResult|string {
+    let tmp = this.options.filter(
+      (item : ISingleInputOption) => (item.show === true && item.value !== '')
+    ).map(
+      (item : ISingleInputOption, index: number) : TemplateResult => html`
+          <li>
+            <label>
+              <input type="${this.mode}"
+                     value="${item.value}"
+                     name="${this.id}__radio"
+                     id="${this.id}__radio--${index}"
+                    ?checked=${item.selected} />
+              ${item.label}
+            </label>
+          </li>`
+      );
+
+    return (tmp.length > 0)
+      ? html`
+        <ul class="demo-list">
+          ${tmp}
+        </ul>
+      `
+      : '';
+
+  }
+
+  /**
+   * Get demo input(s) for this list of options
+   *
+   * @returns HTML for select, radio or checkbox inputs.
+   */
   private _getDemo() : TemplateResult|string {
     let demo : TemplateResult|string = '';
     switch (this.mode) {
       case 'radio':
-        return '';
       case 'checkbox':
-        return '';
+        demo = this._getDemoCheckable();
+        break;
       default:
         demo = this._getDemoSelect();
     }
-    return html`<p class="demo"><label for="demo">Demo:</label> ${demo}</p>`;
+    return html`<div class="demo"><label for="demo">Demo:</label> ${demo}</div>`;
   }
 
 
