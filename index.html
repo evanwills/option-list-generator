@@ -37,13 +37,18 @@
   <body>
 
 	<h1>&lt;option-list-editor&gt;</h1>
-    <option-list-editor id="new" showgroup allowgroup>
-		<option value="evan" data-group="Wills">Evan</option>
-		<option value="ivan" data-group="Wills">Ivan</option>
-		<option value="tarrin" data-group="Wills">Tarrin</option>
-		<option value="toria" data-group="Wills">Toria</option>
-		<option value="mallee" data-group="Pike Wills">Mallee</option>
-		<option value="ada" selected data-group="Pike Wills">Ada</option>
+    <option-list-editor id="new" showgroup allowgroup allowemptyfirst>
+		<option value="">-- please choose --</option>
+		<optgroup label="Wills">
+			<option value="evan">Evan</option>
+			<option value="ivan">Ivan</option>
+			<option value="tarrin">Tarrin</option>
+			<option value="toria">Toria</option>
+		</optgroup>
+		<optgroup label="Pike Wills">
+			<option value="mallee">Mallee</option>
+			<option value="ada" selected>Ada</option>
+		</optgroup>
 		<option disabled>Samara</option>
 		<option value="nicole" disabled></option>
     </option-list-editor>
