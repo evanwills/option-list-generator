@@ -5,12 +5,20 @@ import { repeat } from 'lit/directives/repeat.js';
 import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } from './types/option-list-editor.d';
 
 /**
- * An example element.
+ * `<option-list-editor>` Is a web component for editing HTML
+ * `<SELECT>` input field options and/or lists of
+ * `<INPUT type="radio">` or `<INPUT type="checkbox">` fields
  *
- * @slot - This element has a slot
- * @csspart button - The button
+ * You provide the component with a list of option elements and
+ * `<option-list-editor>` provides an edit interface for those
+ * options.
+ *
+ * While this element doesn't contain a `<slot>` it looks for child
+ * `<option>` & `<optgroup>` HTML elements which it then parses to
+ * extract the data it needs to build up an edit interface for the
+ * provided options.
  */
- @customElement('option-list-editor')
+@customElement('option-list-editor')
  export class OptionListEditor extends LitElement {
 
   // ======================================================
@@ -47,6 +55,12 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
    */
   @property({ type: Boolean })
   showGroup : boolean = false;
+
+  /**
+   * Whether or not to show the "Save" button
+   */
+  @property({ type: Boolean })
+  showSave : boolean = false;
 
   /**
    * Whether or not options can be sorted by client
@@ -216,6 +230,12 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
     --wc-outline-style: dotted;
     --wc-outline-offset: 0.2rem;
 
+    --wc-btn-colour: var(--wc-text-colour);
+    --wc-btn-bg-colour: var(--wc-bg-colour);
+    --wc-btn-weight: bold;
+    --wc-btn-padding: 0.3rem 0.5rem;
+    --wc-btn-border-style: solid;
+
     font-size: var(--wc-font-size);
     background-color: var(--wc-bg-colour);
     color:  var(--wc-text-colour);
@@ -242,7 +262,8 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
     border-radius: var(--wc-border-radius);
     border-width: var(--wc-line-width);
     border-color: var(--wc-text-colour);
-    padding: 0.3rem 0.5rem;
+    border-style: var(--wc-btn-border-style);
+    padding: var(--wc-btn-padding);
     display: inline-block;
   }
   input , textarea {
@@ -474,6 +495,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
     margin-left: 1rem;
   }
   .demo {
+    display: flex;
     padding: 0.5rem;
     border: var(--wc-line-width) solid var(--wc-bg-colour);
     margin: 0;
@@ -482,18 +504,31 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
     background-color: var(--wc-text-colour);
     color: var(--wc-bg-colour);
   }
+  .demo > label {
+    font-weight: bold;
+    padding-right: 1rem;
+  }
+  .demo > div {
+    flex-grow: 1;
+    padding-right: 4rem;
+  }
   .demo select {
     border: var(--wc-line-width) solid var(--wc-bg-colour);
   }
   .demo-list {
     list-style-type: none;
     margin: 0;
-    padding: 0.5rem 0 0 0.5rem;
+    padding: 0;
   }
   .demo-list > li {
     margin: 0  1rem 0.5rem 0;
     padding: 0;
     display: inline-block;
+  }
+  .save-btn {
+    position: absolute;
+    top: 0.3rem;
+    right: 0.5rem;
   }
 
   @media screen and (min-width: 48rem) {
@@ -580,15 +615,20 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
         : this.allowHideByDate;
 
       for (let a = 0; a < tmp.length; a += 1) {
+        const _tmp = tmp[a] as HTMLOptionElement;
         let groupLabel = '';
 
         // See if we need and are able to get the group name for this option
-        if (this.allowGroup && tmp[a].parentElement instanceof HTMLOptGroupElement) {
-          const optGrp = tmp[a].parentElement as HTMLOptGroupElement;
+        if (this.allowGroup) {
+          if (_tmp.parentElement instanceof HTMLOptGroupElement) {
+            const optGrp = _tmp.parentElement as HTMLOptGroupElement;
 
-          groupLabel = (typeof optGrp.label === 'string')
-            ? optGrp.label.trim()
-            : '';
+            groupLabel = (typeof optGrp.label === 'string')
+              ? optGrp.label.trim()
+              : '';
+          } else if (typeof _tmp.dataset.group === 'string') {
+            groupLabel = (_tmp.dataset.group as string).trim();
+          }
 
           if (groupLabel !== '' && this._groupNames.indexOf(groupLabel) < 0) {
             this._groupNames.push(groupLabel);
@@ -596,18 +636,18 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
         }
 
         const option : ISingleInputOption = {
-          value: tmp[a].value,
-          label: (tmp[a].innerText !== '')
-            ? tmp[a].innerText
-            : tmp[a].value,
-          selected: tmp[a].selected,
-          show: !tmp[a].disabled,
+          value: _tmp.value,
+          label: (_tmp.innerText !== '')
+            ? _tmp.innerText
+            : _tmp.value,
+          selected: _tmp.selected,
+          show: !_tmp.disabled,
           group: groupLabel,
-          hideBefore: (typeof tmp[a].dataset.hidebefore === 'string')
-            ? tmp[a].dataset.hidebefore as string
+          hideBefore: (typeof _tmp.dataset.hidebefore === 'string')
+            ? _tmp.dataset.hidebefore as string
             : '',
-          hideAfter: (typeof tmp[a].dataset.hideafter === 'string')
-            ? tmp[a].dataset.hidebefore as string
+          hideAfter: (typeof _tmp.dataset.hideafter === 'string')
+            ? _tmp.dataset.hidebefore as string
             : ''
         };
 
@@ -1086,8 +1126,12 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
         field: '',
         value: ''
       }
+      console.log('bits:', bits)
 
       switch(bits[1]) {
+        // --------------------------------------
+        // START: Public actions
+
         case 'toggle':
           if (field === 'show') {
             ok = data._toggleShow(ind);
@@ -1134,6 +1178,26 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
           output.action = 'SORT';
           break;
 
+        case 'importAppend':
+          ok = data._import('append');
+          output.action = 'APPENDIMPORTED';
+          break;
+
+        case 'importReplace':
+          ok = data._import('replace');
+          output.action = 'IMPORTREPLACE';
+          break;
+
+        case 'save':
+          // ok = data.options.filter(item => item.error !== '');
+          ok = true;
+          output.action = 'SAVE';
+          break;
+
+        //  END:  Public actions
+        // --------------------------------------
+        // START: Private actions
+
         case 'groupShow':
           this.showGroup = !this.showGroup;
           break;
@@ -1172,16 +1236,14 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
           this._parseImport();
           break;
 
-        case 'importAppend':
-          ok = data._import('append');
-          output.action = 'APPENDIMPORTED';
-          break;
-
-        case 'importReplace':
-          ok = data._import('replace');
-          output.action = 'IMPORTREPLACE';
-          break;
+        //  END:  Private actions
+        // --------------------------------------
       }
+
+      console.group('handler()')
+      console.log('ok:', ok)
+      console.log('output:', output)
+      console.groupEnd()
 
       if (ok === true) {
         // Update event data
@@ -1326,6 +1388,9 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
             break;
           case 'group':
             tmp.group = val;
+            if (val !== '' && this._groupNames.indexOf(val) === -1) {
+              this._groupNames.push(val);
+            }
             ok = true;
             break;
           case 'hidebefore':
@@ -1874,7 +1939,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
     const sortTitle = this.showGroup
         ? 'group then '
         : '';
-    this._firstIsEmpty = (this.options[0].value === '');
+    this._firstIsEmpty = (typeof this.options[0] !== 'undefined' && this.options[0].value === '');
 
     return html`
         <ul class="single-option__wrap">
@@ -1960,7 +2025,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
     let ungrouped : Array<IOptionGroup>;
     let all : Array<IOptionGroup> = []
 
-    if (tmp[0].value === '' && this.allowEmptyFirst) {
+    if (typeof tmp[0] !== 'undefined' && tmp[0].value === '' && this.allowEmptyFirst) {
       all.push({
         label: '[[FIRST]]',
         options: [tmp[0]]
@@ -2052,7 +2117,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
       default:
         demo = this._getDemoSelect();
     }
-    return html`<div class="demo"><label for="demo">Demo:</label> ${demo}</div>`;
+    return html`<div class="demo"><label for="demo">Example:</label> <div>${demo}</div></div>`;
   }
 
 
@@ -2199,6 +2264,9 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
    */
    render() : TemplateResult {
     this._init();
+    console.group('render()');
+    console.log('this.showSave:', this.showSave)
+    console.groupEnd();
 
     return html`
       <div class="whole">
@@ -2212,6 +2280,10 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
       }
       ${(this._showImportModal)
         ? this._renderImportUI()
+        : ''
+      }
+      ${(this.showSave)
+        ? html`<button id="${this.id}____0__save" class="save-btn" @click=${this._getHandler()}>Save</button>`
         : ''
       }
       </div>

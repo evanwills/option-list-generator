@@ -2,9 +2,17 @@
 
 ## Introduction
 
-`<option-list-editor>` Is a web component for editing HTML `<SELECT>` input field options and/or lists of `<INPUT type="radio">` or `<INPUT type="checkbox">`  fields
+`<option-list-editor>` Is a web component for editing HTML `<SELECT>` 
+input field options and/or lists of `<INPUT type="radio">` or 
+`<INPUT type="checkbox">`  fields
 
-You provide the component with a list of option elements and `<option-list-editor>` provides an edit interface for those options.
+You provide the component with a list of option elements and 
+`<option-list-editor>` provides an edit interface for those options.
+
+While this element doesn't contain a `<slot>` it looks for child
+`<option>` & `<optgroup>` HTML elements which it then parses to 
+extract the data it needs to build up an edit interface for the 
+provided options.
 
 
 
@@ -20,7 +28,10 @@ npm run dev;
 
 ## Usage
 
-> __NOTE:__ To ensure that there is no conflict with IDs within and outside the component, the `id` attribute is the only required attribute. If an ID is not supplied, the component will throw an error.
+> __NOTE:__ To ensure that there is no conflict with IDs within and 
+>           outside the component, the `id` attribute is the only 
+>           required attribute. If an ID is not supplied, the 
+>           component will throw an error.
 
 ```html
 <option-list-editor id="option-list"></option-list-editor>
