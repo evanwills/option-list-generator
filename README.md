@@ -1,5 +1,20 @@
 # `<option-list-editor>`
 
+* [Introduction](#introduction)
+* [Installation](#installation)
+* [Usage](#usage)
+* [Attributes](#attributes)
+* [Public properties](#public-properties)
+* [Actions that trigger change events](#actions-that-trigger-change-events)
+* [Type definitions](#type-definitions)
+    * [`ISingleInputOption`](#isingleinputoption)
+    * [`IEventData`](#ieventdata)
+* [Exported functions and helper methods](#exported-functions-and-helper-methods)
+    * [Exported functions](#exported-functions)
+    * [Helper methods](#helper-methods)
+
+
+-----
 ## Introduction
 
 `<option-list-editor>` Is a web component for editing HTML `<SELECT>` 
@@ -45,27 +60,62 @@ or
     <option value="baz" disabled>Baz</option> <!-- Option is not visable to end user -->
 
     <!-- The following two options belong to the *code* group -->
-    <option value="if" group="code">If</option>
-    <option value="while" group="code">While</option>
+    <option value="if" data-group="code">If</option>
+    <option value="while" data-group="code">While</option>
     
     <!-- Option will be hidden before the 11:45am on the 11th of May 2022 -->
-    <option value="early" hidebefore="2022-05-27T11:45:00">Too early</option>
+    <option value="early" data-hidebefore="2022-05-27T11:45:00">Too early</option>
     
     <!-- Option will be hidden after 2022 -->
-    <option value="early" hidebefore="2022-12-31T23:59:59">Too late</option>
+    <option value="early" data-hidebefore="2022-12-31T23:59:59">Too late</option>
+</option-list-editor>
+```
+or if you already have code that can generate option groups
+
+```html
+<option-list-editor id="option-list">
+    <optgroup label="Birds">
+        <!-- The following two options belong to the *code* group -->
+        <option value="plover">Plover</option>
+        <option value="sooty oyster catcher">Sooty oyster catcher</option>
+        <option value="pacific gull">Pacific gull</option>
+    </optgroup>
+    <optgroup label="Mammals">
+        <option value="bandicoot">Bandicoot</option>
+        <option value="brush tail possum">Brush tail possum</option>
+        <option value="ring tail possum">Ring tail possum</option>
+        <option value="pigmy possum">Pigmy possum</option>
+    </optgroup>
 </option-list-editor>
 ```
 
-When processing the options nested within the `<option-list-editor>` component, up to six attributes are looked for:
+When processing the options nested within the `<option-list-editor>` 
+component, up to six attributes are looked for:
 
-1. `value` If value is not present or is empty and the innerText of the option is not empty, that will be used for both the option value and label
-2. `selected` This is used to set the "default" status of the option. This can be toggled on or off via the edit interface once the component is instantiated
+1. `value` If value is not present or is empty and the innerText of 
+            the option is not empty, that will be used for both the 
+            option value and label
+2. `selected` This is used to set the "default" status of the option. 
+            This can be toggled on or off via the edit interface once 
+            the component is instantiated
 3. `disabled` This is used to define the show/hide status of the option
-4. `data-group` If the option is part of an option-group, this can be used for defining which group.
-5. `data-hidebefore` (This probably has almost no usecase outside of my own but...) This expectis an ISO 8601 date/time string intending for making the options visibilty time sensitive
-6. `data-hideafter` (This probably has almost no usecase outside of my own but...) This expectis an ISO 8601 date/time string intending for making the options visibilty time sensitive.
+4. `data-group` If the option is part of an option-group, this can be 
+    used for defining which group.
+    > __NOTE:__ `group` handling only allows for one level of 
+                grouping. If the external client wants more deeply 
+                nested grouping, it should do so by having a 
+                separator character between the group names within 
+                the group string
+5. `data-hidebefore` (This probably has almost no usecase outside of 
+            my own but...) This expects an ISO 8601 date/time string 
+            intending for making the options visibilty time sensitive
+6. `data-hideafter` (This probably has almost no usecase outside of 
+            my own but...) This expects an ISO 8601 date/time string 
+            intending for making the options visibilty time sensitive.
 
-> __NOTE:__ While there is an option with either value or label empty, new options cannot be added and existing options cannot be moved.
+> __NOTE:__ While there is an option with either value or label empty, 
+            new options cannot be added and existing options cannot 
+            be moved.
 
 -----
 ## Attributes
@@ -156,22 +206,29 @@ When processing the options nested within the `<option-list-editor>` component, 
 
 ## Public properties
 
-### `doInit` - *[default: `FALSE`]*
+* `doInit` - *[default: `FALSE`]*
 
-If the client wishes to force the rerun the initialisation process, they can set this to true. E.g. They have updated the list of options within the component but have not rerendered the component itself.
+    If the client wishes to force the rerun the initialisation 
+    process, they can set this to true. E.g. They have updated the 
+    list of options within the component but have not rerendered the 
+    component itself.
 
-### `options` - *`Array<ISingleInputOption>`*
+* `options` - *`Array<ISingleInputOption>`*
 
-Current state of the list of options the component is editing.
+    Current state of the list of options the component is editing.
 
-### `eventData` - *`IEventData`*
+* `eventData` - *`IEventData`*
 
-Information about the last internal event that triggered a public change event
+    Information about the last internal event that triggered a public 
+    change event
 
 
 -----
 
 ## Actions that trigger change events
+
+Depending on how the client is using `<option-list-editor>`, it may
+wish to know when small updates
 
 * `UPDATE` - One of the text fields for a single option was updated
    * `value`
@@ -198,11 +255,13 @@ Information about the last internal event that triggered a public change event
             `label` (if `allowGroup` is `FALSE`) *or*
             by `group` then  `label` (if `allowGroup` is `TRUE`)
 
-* `APPEND_IMPORTED` - Add multiple valid options to the existing 
+* `APPENDIMPORTED` - Add multiple valid options to the existing 
                       list of options
 
-* `IMPORT_REPLACE` - Replace all existing options with imported list 
+* `IMPORTREPLACE` - Replace all existing options with imported list 
                      of valid options
+
+* `SAVE` - The user wishes to save all the changes they've made
 
 
 -----
@@ -285,3 +344,146 @@ export interface IEventData {
 
 * `value` - For *UPDATE* events value is the new value after update.
             For all other events `value` is an empty string
+
+-----
+
+## Exported functions and helper methods
+
+For clients wishing to manage state in parallel to 
+`<option-list-editor>`, there are a couple of bundled pure functions 
+and one helper method to make this easier
+
+### Exported functions
+
+Because client applications may wish to handle changes to 
+`<option-list-editor>` in different ways, it offers a number of pure 
+functions to perform state changes both within the custom element and 
+to be used by client code.
+
+The following functions are used by `<option-list-editor>` to manage 
+it's internal state changes but the can also be used by clients to 
+replicate the changes in their own state.
+
+* __`moveSelectedOption()`__ - which is used to move a single option 
+            up or down the list of options relative to its starting 
+            position.
+    
+    It accepts three arguments:
+    * `options` {Array<ISingleInputOption>} - List of all options in 
+      the option list
+    * `index` {number} - The starting postion of the option to be 
+      moved
+    * `direction` {"up" or "down"} which direction the option should 
+      be moved
+
+    Returns an updated version of `options` where the specified 
+    option has been moved
+
+    ```typescript
+    const newOptions = moveSelectedOption(options, 2, 'up');
+    ```
+    
+* __`toggleSelectedOption()`__ toggles the selected option.
+    > __NOTE:__ If `allowMulti` is `FALSE` all other options will 
+                have their `selected` value set to `FALSE`
+    
+    It accepts three arguments:
+    * `options` {Array<ISingleInputOption>} - List of all options in 
+      the option list
+    * `index` {number} - The starting postion of the option to be 
+      moved
+    * `allowMulti` {boolean} Whether or not multiple options can be 
+      selected at one time by default
+
+    Returns an updated version of `options` where the specified 
+    option has had its `selected` value toggled and potentially where 
+    all other option's `selected` value is set to `FALSE`.
+
+    ```typescript
+    const newOptions = toggleSelectedOption(options, 1, false);
+    ```
+    
+* __`deleteSelectedOption()`__ Deletes the option specified by the 
+                index.
+    
+    It accepts two arguments:
+    * `options` {Array<ISingleInputOption>} - List of all options in 
+      the option list
+    * `index` {number} - Index of the option to be deleted
+
+    Returns an updated version of `options` where the specified 
+    option has been deleted
+
+    ```typescript
+    const newOptions = deleteSelectedOption(options, 5);
+    ```
+    
+* __`sortOptions()`__ Sort options alphabetically by `label` or 
+            `group` then `label`
+
+    > __NOTE:__ Sorting is case insensitive
+    
+    It accepts two arguments:
+    * `options` {Array<ISingleInputOption>} - List of all options in 
+      the option list
+    * `sortByGroup` {boolean} - Whether or not to sort by group first
+                or label only
+
+    Returns a sorted list of options
+
+    ```typescript
+    const newOptions = sortOptions(options, 5);
+    ```
+### Helper methods
+
+For clients that want to allow `<option-list-editor>` to do all of 
+the minor changes internally and only do bulk updates using the 
+entire state of `<option-list-editor>` there are three helper methods
+to extract option data in different format.
+
+* __`OptionListEditor.optionsToJson()`__ - Export the state of 
+        `<option-list-editor>` as a JSON array.
+    
+    This is intended for when management of the options list state is 
+    left entirely up to `<option-list-editor>` and the client just 
+    accepts the full option list state each time an update is made.
+
+    Returns JSON string
+    ```typescript
+    OptionListEditor.optionsToJson()
+    ```
+
+* __`getOptionData()`__ - Get option data as separate text
+   
+    By default this outputs Tab delimited text but can be
+    configured to any sort of delimited format
+
+    Accepts two arguments:
+    * `colSep` {string} - Character to separate column values
+    * `rowSep` {string} - Character to separate rows of data
+
+    Returns a string with each option as a row and data for each 
+    option in columns
+
+    ```typescript
+    OptionListEditor.getOptionData() // Tab separated values
+    OptionListEditor.getOptionData(',') // Comma separated values
+    OptionListEditor.getOptionData('^', '~') // Carot separated values with tilda separated rows
+    ```
+
+* __`getOptionDataWithHeader()`__ - Get option data as separate text 
+        with header row
+   
+    By default this outputs Tab delimited text but can be
+    configured to any sort of delimited format
+
+    Accepts two arguments:
+    * `colSep` {string} - Character to separate column values
+    * `rowSep` {string} - Character to separate rows of data
+
+    Returns a string with each option as a row and data for each 
+    option in columns
+
+    ```typescript
+    OptionListEditor.getOptionDataWithHeader()
+    ```

@@ -630,9 +630,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
             groupLabel = (_tmp.dataset.group as string).trim();
           }
 
-          if (groupLabel !== '' && this._groupNames.indexOf(groupLabel) < 0) {
-            this._groupNames.push(groupLabel);
-          }
+          this._groupNames = addToGroupNames(this._groupNames, groupLabel);
         }
 
         const option : ISingleInputOption = {
@@ -858,12 +856,12 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
    * By default this outputs Tab delimited text but can be
    * configured to any sort of delimited format
    *
-   * @param lineSep Output line separator
    * @param colSep  Output column separator
+   * @param rowSep Output line separator
    *
    * @returns option data as separated text string
    */
-  public getData(lineSep : string = '\n', colSep : string = '') : string {
+  public getOptionData(colSep : string = '', rowSep : string = '\n') : string {
     const sep = (colSep !== '')
       ? colSep
       : this._importSep;
@@ -873,7 +871,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
 
     for (let a = 0; a < this.options.length; a += 1) {
       output += this._getRowByIndex(a, line, sep);
-      line = lineSep;
+      line = rowSep;
     }
 
     return output;
@@ -882,17 +880,17 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
   /**
    * Extract option data as string with header row
    *
-   * @param lineSep Output line separator
    * @param colSep  Output column separator
+   * @param rowSep Output line separator
    *
    * @returns String th
    */
-  public getDataWithHeader(lineSep : string = '\n', colSep : string = '') : string {
+  public getOptionDataWithHeader(colSep : string = '', rowSep : string = '\n') : string {
     const sep = (colSep !== '')
       ? colSep
       : this._importSep;
 
-    return this._getHeader(sep) + lineSep + this.getData(lineSep, sep);
+    return this._getHeader(sep) + rowSep + this.getOptionData(rowSep, sep);
   }
 
   /**
@@ -900,7 +898,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
    *
    * @returns JSON for list of options.
    */
-  public toJSON() : string {
+  public optionsToJson() : string {
     return JSON.stringify(this.options);
   }
 
@@ -1126,7 +1124,6 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
         field: '',
         value: ''
       }
-      console.log('bits:', bits)
 
       switch(bits[1]) {
         // --------------------------------------
@@ -1240,8 +1237,9 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
         // --------------------------------------
       }
 
-      console.group('handler()')
+      console.group('handler() option-list-editor')
       console.log('ok:', ok)
+      console.log('bits:', bits)
       console.log('output:', output)
       console.groupEnd()
 
@@ -1265,21 +1263,8 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
    * @returns TRUE if option was moved up or down
    */
   private _move(index : number, direction: string) : boolean {
-    const option = this.options.filter(
-      (_option : ISingleInputOption, i : number) => (index === i)
-    )
-    const allOptions = this.options.filter(
-      (_option : ISingleInputOption, i : number) => (index !== i)
-    )
-    const newInd = (direction.toLowerCase() === 'up')
-      ? index - 1
-      : index + 1;
+    this.options = moveSelectedOption(this.options, index, direction);
 
-    this.options = [
-      ...allOptions.slice(0, newInd),
-      option[0],
-      ...allOptions.slice(newInd)
-    ]
     return true;
   }
 
@@ -1321,42 +1306,11 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
    * @returns TRUE if option's property was updated, FALSE otherwise
    */
   private _toggleSelected(index: number) : boolean {
-    const output = [...this.options];
-    let ok = false;
+    this.options = toggleSelectedOption(
+      this.options, index, this.allowMulti
+    );
 
-    if (this.allowMulti) {
-      for (let a = 0; a < output.length; a += 1) {
-        if (index === a) {
-          ok = true;
-          output[a] =  {
-            ...output[a],
-            selected: !output[a].selected
-          }
-          break;
-        }
-      }
-    } else {
-      for (let a = 0; a < output.length; a += 1) {
-        if (index === a) {
-          ok = true;
-          output[a] =  {
-            ...output[a],
-            selected: !output[a].selected
-          }
-        } else {
-          output[a] =  {
-            ...output[a],
-            selected: false
-          }
-        }
-      }
-    }
-
-    if (ok === true) {
-      this.options = output;
-    }
-
-    return ok;
+    return true;
   }
 
   /**
@@ -1388,9 +1342,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
             break;
           case 'group':
             tmp.group = val;
-            if (val !== '' && this._groupNames.indexOf(val) === -1) {
-              this._groupNames.push(val);
-            }
+            this._groupNames = addToGroupNames(this._groupNames, val);
             ok = true;
             break;
           case 'hidebefore':
@@ -1418,78 +1370,12 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
   }
 
   /**
-   * Sorting function used to sort options
-   *
-   * @param a First item to compare
-   * @param b Second item to compare
-   *
-   * @returns -1 if option should move up the list,
-   *           1 if item should move down the list or
-   *           0 if item should not move
-   */
-   private _sortInnerLabel(a: ISingleInputOption, b: ISingleInputOption) : number {
-    const labelA = (a.label as string).toLowerCase()
-    const labelB = (b.label as string).toLowerCase()
-
-    if (labelA < labelB) {
-      return -1;
-    } else if (labelA > labelB) {
-      return 1;
-    } else {
-      return 0;
-    }
-  }
-
-  /**
-   * Sorting function used to sort options
-   *
-   * @param a First item to compare
-   * @param b Second item to compare
-   *
-   * @returns -1 if option should move up the list,
-   *           1 if item should move down the list or
-   *           0 if item should not move
-   */
-  private _sortInnerGroupLabel(a: ISingleInputOption, b: ISingleInputOption) : number {
-    const labelA = (a.label as string).toLowerCase()
-    const labelB = (b.label as string).toLowerCase()
-    const groupA = (a.group as string).toLowerCase()
-    const groupB = (b.group as string).toLowerCase()
-
-    if (a.value === '') {
-      return -1;
-    }
-
-    if (groupA < groupB) {
-      return -1;
-    } else if (groupA > groupB) {
-      return 1;
-    } else {
-      if (labelA < labelB) {
-        return -1;
-      } else if (labelA > labelB) {
-        return 1;
-      } else {
-        return 0;
-      }
-    }
-  }
-
-  /**
    * Sort options alphabetically by label (case insensitive)
    *
    * @returns TRUE if options were sorted
    */
   private _sort() : boolean {
-    const options = [...this.options];
-
-    options.sort(
-      (this.showGroup)
-        ? this._sortInnerGroupLabel
-        : this._sortInnerLabel
-    );
-
-    this.options = options
+    this.options = sortOptions(this.options, this.showGroup);
 
     return true;
   }
@@ -1527,19 +1413,9 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
    * @returns TRUE if option was deleted, FALSE otherwise
    */
   private _delete(index: number) : boolean {
-    let i = index;
     const len = this.options.length;
 
-    this.options = this.options.filter(
-      (option:ISingleInputOption, index: number) => {
-        if (index === i && this._canBeDeleted(option)) {
-          i = -1;
-          return false;
-        } else {
-          return true;
-        }
-      }
-    )
+    this.options = deleteSelectedOption(this.options, index);
 
     return (len !== this.options.length);
   }
@@ -2134,7 +2010,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
   private _renderImportUI() : TemplateResult {
     const id = this.id + '____0__';
     const handler = this._getHandler();
-    console.group('_renderImportUI()')
+    // console.group('_renderImportUI()')
 
     let sep = this._importSep;
     switch (sep) {
@@ -2151,7 +2027,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
         sep = '\\l';
         break;
     }
-    console.groupEnd();
+    // console.groupEnd();
 
     return html`
       <button id="${this.id}____1__showImportModal" class="close-bg" @click=${handler}>Close import</button>
@@ -2175,8 +2051,8 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
           <p class="import-data__wrap">
             <label for="${id}updateImportData" class="import-data__label">Separated value text (e.g. TSV or CSV)</label>
             <textarea id="${id}updateImportData" name="${id}updateImportData" @change=${handler} class="import-data__input">${(this._importHasHeader)
-                ? this.getDataWithHeader()
-                : this.getData()
+                ? this.getOptionDataWithHeader()
+                : this.getOptionData()
             }</textarea>
           </p>
           <p class="import-buttons_wrap">
@@ -2264,9 +2140,9 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
    */
    render() : TemplateResult {
     this._init();
-    console.group('render()');
-    console.log('this.showSave:', this.showSave)
-    console.groupEnd();
+    // console.group('render()');
+    // console.log('this.showSave:', this.showSave)
+    // console.groupEnd();
 
     return html`
       <div class="whole">
@@ -2293,10 +2169,265 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
 
   //  END:  Shared render methods
   // ======================================================
- }
+}
 
- declare global {
-   interface HTMLElementTagNameMap {
-     'option-list-editor': OptionListEditor
-   }
- }
+declare global {
+  interface HTMLElementTagNameMap {
+    'option-list-editor': OptionListEditor
+  }
+}
+
+
+
+
+
+// ========================================================
+// START:  Shared state manipulation methods
+
+// --------------------------------------------------------
+// The following collection of pure functions are used to
+// manage state changes for certain actions within
+// `<option-list-editor>`.
+//
+// If the `<option-list-editor>` client (e.g. Redux) is
+// managing its own state (rather than just accepting the
+// contents of `OptionListEditor.options`) it can use
+// these functions to perform the same action on its own
+// (external) state.
+// --------------------------------------------------------
+
+
+/**
+ * Move an option up or down the list relative to its current position
+ *
+ * @param options   List of all options in the option list
+ * @param index     Index of option to be moved
+ * @param direction Direction to move ("up" or "down")
+ *
+ * @returns TRUE if option was moved up or down
+ */
+export const moveSelectedOption = (
+  options: Array<ISingleInputOption>, index: number, direction: string
+) : Array<ISingleInputOption> => {
+  const option = options.filter(
+    (_option : ISingleInputOption, i : number) => (index === i)
+  );
+  const allOptions = options.filter(
+    (_option : ISingleInputOption, i : number) => (index !== i)
+  );
+  const newInd = (direction.toLowerCase() === 'up')
+    ? index - 1
+    : index + 1;
+
+  return [
+    ...allOptions.slice(0, newInd),
+    option[0],
+    ...allOptions.slice(newInd)
+  ];
+};
+
+/**
+ * Toggle Selected status of the specified option
+ *
+ * @param options    List of all options in the option list
+ * @param index      Index of option to be deleted
+ * @param allowMulti Which option property should be updated
+ *
+ * @returns Updated version of `options` where the specified
+ *          option has had its `selected` value toggled and
+ *          potentially where all other option's `selected` value
+ *          is set to `FALSE`.
+ */
+export const toggleSelectedOption = (
+  options: Array<ISingleInputOption>, index: number, allowMulti: boolean = false
+) : Array<ISingleInputOption> => {
+  const output = [...options];
+  let ok = false;
+
+  if (allowMulti) {
+    for (let a = 0; a < output.length; a += 1) {
+      if (index === a) {
+        ok = true;
+        output[a] =  {
+          ...output[a],
+          selected: !output[a].selected
+        }
+        break;
+      }
+    }
+  } else {
+    for (let a = 0; a < output.length; a += 1) {
+      if (index === a) {
+        ok = true;
+        output[a] =  {
+          ...output[a],
+          selected: !output[a].selected
+        }
+      } else {
+        output[a] =  {
+          ...output[a],
+          selected: false
+        }
+      }
+    }
+  }
+
+  return output;
+};
+
+/**
+ * Toggle Selected status of the specified option
+ *
+ * @param options List of all options in the option list
+ * @param index   Index of option to be deleted
+ *
+ * @returns TRUE if option's property was updated, FALSE otherwise
+ */
+export const deleteSelectedOption = (
+  options: Array<ISingleInputOption>, index: number
+) : Array<ISingleInputOption> => {
+  let i = index;
+
+  return options.filter(
+    (option:ISingleInputOption, index: number) => {
+      if (index === i && _canBeDeleted(option)) {
+        i = -1;
+        return false;
+      } else {
+        return true;
+      }
+    }
+  );
+}
+
+/**
+ * Check whether a single item can be deleted
+ *
+ * @param option Option to be tested
+ *
+ * @returns TRUE if the option is hidden of both value & label are empty
+ */
+const _canBeDeleted = (option : ISingleInputOption) : boolean => {
+  return (option.show === false || (option.value == '' && option.label === ''));
+}
+
+
+/**
+ * Sort options alphabetically by label (case insensitive)
+ *
+ * @param options     List of all options in the option list
+ * @param sortByGroup Whether or not to sort by group first or
+ *                    label only
+ *
+ * @returns Sorted list of options
+ */
+export const sortOptions = (
+  options: Array<ISingleInputOption>, sortByGroup: boolean = false
+) : Array<ISingleInputOption> => {
+  const output = [...options];
+
+  output.sort(
+    (sortByGroup === true)
+      ? _sortInnerGroupLabel
+      : _sortInnerLabel
+  );
+
+  return output
+}
+
+/**
+ * Sorting function used to sort options
+ *
+ * @param a First item to compare
+ * @param b Second item to compare
+ *
+ * @returns -1 if option should move up the list,
+ *           1 if item should move down the list or
+ *           0 if item should not move
+ */
+const _sortInnerLabel = (a: ISingleInputOption, b: ISingleInputOption) : number => {
+  const labelA = (a.label as string).toLowerCase()
+  const labelB = (b.label as string).toLowerCase()
+
+  if (labelA < labelB) {
+    return -1;
+  } else if (labelA > labelB) {
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+/**
+ * Sorting function used to sort options
+ *
+ * @param a First item to compare
+ * @param b Second item to compare
+ *
+ * @returns -1 if option should move up the list,
+ *           1 if item should move down the list or
+ *           0 if item should not move
+ */
+const _sortInnerGroupLabel = (a: ISingleInputOption, b: ISingleInputOption) : number => {
+  const labelA = (a.label as string).toLowerCase()
+  const labelB = (b.label as string).toLowerCase()
+  const groupA = (a.group as string).toLowerCase()
+  const groupB = (b.group as string).toLowerCase()
+
+  if (a.value === '') {
+    return -1;
+  }
+
+  if (groupA < groupB) {
+    return -1;
+  } else if (groupA > groupB) {
+    return 1;
+  } else {
+    if (labelA < labelB) {
+      return -1;
+    } else if (labelA > labelB) {
+      return 1;
+    } else {
+      return 0;
+    }
+  }
+}
+
+/**
+ * Add a new group name to the list of known group names
+ *
+ * @param allGroupNames List of group names already known in option list
+ * @param newName       New group name to be added to the list
+ *
+ * @returns Update list of group names if newName was unknown or
+ *          original list if newName was already in the list
+ */
+export const addToGroupNames = (allGroupNames: Array<string>, newName: string) : Array<string> => {
+
+  if (newName !== '' && allGroupNames.indexOf(newName) === -1) {
+    const output = [...allGroupNames];
+
+    output.push(newName);
+
+    output.sort((a : string, b : string) : number => {
+      const aLow = a.toLowerCase();
+      const bLow = b.toLowerCase();
+
+      if (aLow < bLow) {
+        return -1;
+      } else if (aLow > bLow) {
+        return 1;
+      } else {
+        return 0;
+      }
+    });
+
+    return output;
+  }
+
+  return allGroupNames;
+}
+
+
+// START:  Shared state manipulation methods
+// ======================================================
