@@ -557,7 +557,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
   }
   .import-sep-input {
     display: inline-block;
-    width: 2rem;
+    width: 2.35rem;
     margin-right: 1rem;
   }
   .import-data__wrap {
@@ -823,7 +823,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
   }
 
   private _emptyIsOK(option : ISingleInputOption, index : number) : boolean {
-    return (option.value !== '' || (index === 0 && this.allowEmptyFirst))
+    return (option.value !== '' || (index === 0 && this.allowEmptyFirst));
   }
 
   /**
@@ -833,10 +833,9 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
    */
   private _okToAdd() : boolean {
     for (let a = 0; a < this.options.length; a += 1) {
-      if (this.options[a].label === '') {
+      if (this.options[a].label === '' || !this._emptyIsOK(this.options[a], a)) {
         return false;
       }
-      return this._emptyIsOK(this.options[a], a);
     }
     return true;
   }
@@ -908,11 +907,14 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
   private _getHeader(colSep : string) : string {
     let output = 'value' + colSep + 'label' + colSep + 'selected' + colSep + 'show';
 
-    if (this.allowGroup) {
+    if (this.showGroup) {
       output += colSep + 'group';
     }
-    if (this.allowHideByDate) {
-      output += colSep + 'hideBefore' +  colSep + 'hideAfter';
+    if (this.showHideBefore) {
+      output += colSep + 'hideBefore';
+    }
+    if (this.showHideAfter) {
+      output += colSep + 'hideAfter';
     }
     return output;
   }
@@ -920,27 +922,29 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
   /**
    * Get data for a single option.
    *
-   * @param index   Index of option whose data is to be returned
-   * @param lineSep Output line separator
-   * @param colSep  Output column separator
+   * @param index  Index of option whose data is to be returned
+   * @param rowSep Output row separator
+   * @param colSep Output column separator
    *
    * @returns option data as separated text string
    */
-  private _getRowByIndex(index: number, lineSep : string, colSep : string) : string {
+  private _getRowByIndex(index: number, colSep : string, rowSep : string) : string {
     let output = '';
 
     if (typeof this.options[index] !== 'undefined') {
-      output = lineSep + this.options[index].value +
+      output = rowSep + this.options[index].value +
                colSep  + this.options[index].label +
                colSep  + this.options[index].selected +
                colSep  + this.options[index].show;
 
-      if (this.allowGroup) {
+      if (this.showGroup) {
         output += colSep + this.options[index].group;
       }
-      if (this.allowHideByDate) {
-        output += colSep + this.options[index].hideBefore +
-                  colSep + this.options[index].hideAfter;
+      if (this.showHideBefore) {
+        output += colSep + this.options[index].hideBefore;
+      }
+      if (this.showHideAfter) {
+        output += colSep + this.options[index].hideAfter;
       }
     }
 
@@ -953,8 +957,8 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
    * By default this outputs Tab delimited text but can be
    * configured to any sort of delimited format
    *
-   * @param colSep  Output column separator
-   * @param rowSep Output line separator
+   * @param colSep Output column separator
+   * @param rowSep Output row separator
    *
    * @returns option data as separated text string
    */
@@ -964,11 +968,11 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
       : this._importSep;
     let output = '';
 
-    let line = '';
+    let newRow = '';
 
     for (let a = 0; a < this.options.length; a += 1) {
-      output += this._getRowByIndex(a, line, sep);
-      line = rowSep;
+      output += this._getRowByIndex(a, sep, newRow);
+      newRow = rowSep;
     }
 
     return output;
@@ -977,8 +981,8 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
   /**
    * Extract option data as string with header row
    *
-   * @param colSep  Output column separator
-   * @param rowSep Output line separator
+   * @param colSep Output column separator
+   * @param rowSep Output row separator
    *
    * @returns String th
    */
@@ -987,7 +991,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
       ? colSep
       : this._importSep;
 
-    return this._getHeader(sep) + rowSep + this.getOptionData(rowSep, sep);
+    return this._getHeader(sep) + rowSep + this.getOptionData(sep, rowSep);
   }
 
   /**
@@ -1065,7 +1069,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
     if (this._importData.trim() === '') {
       // Nothing to do so lets get out of here
       return output;
-    }
+    };
 
     const sep = (this._importSep !== '')
       ? this._importSep
@@ -1114,10 +1118,12 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
       // we don't have enough info to keep going
       return output;
     }
+
     const uniqueValues : Array<string> = [];
     const uniqueLabels : Array<string> = [];
 
     for (let a = start; a < tmp.length; a += 1) {
+      const b = a - start;
       const opt : ISingleInputOption = {
         value: this._getStr(tmp, a, cols.value, 128),
         label: this._getStr(tmp, a, cols.label, 512),
@@ -1128,14 +1134,17 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
         hideAfter: this._getValidDate(this._getStr(tmp, a, cols.hideAfter, 64))
       }
 
-      if (opt.value === '' && opt.label !== '') {
+      if (!this._emptyIsOK(opt, b) && opt.label !== '') {
+        // value must not be empty so we'll use the label as the value
         opt.value = opt.label;
-      } else if (opt.value !== '' && opt.label === '') {
+      }
+      if (opt.value !== '' && opt.label === '') {
+        // label must not be empty so we'll use the value as the label
         opt.label = opt.value;
       }
 
       // Make sure the option is usable and unique
-      if (opt.value !== '' &&
+      if (this._emptyIsOK(opt, b) &&
           opt.label !== '' &&
          (this.allowDuplicate === true ||
          (uniqueValues.indexOf(opt.value) === -1 &&
@@ -1149,9 +1158,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
         uniqueLabels.push(opt.label);
       }
     }
-
     this._importIsValid = (output.length > 0);
-
     // Give back what we have
     return output;
   }
@@ -1204,6 +1211,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
     const data = this;
     return (e: Event) => {
       const input = e.target as HTMLInputElement;
+
 
       // Get only the bits of the ID that we need
       const bits = input.id.replace(/^.*?____(?=[0-9]+__[a-z]+)/i, '').split('__');
@@ -1314,31 +1322,30 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
           break;
 
         case 'updateImportSep':
-          output.value = this._getImportSep(output.value);
+          output.value = this._getImportSep(input.value);
           break;
 
         case 'toggleImportHasHead':
           this._importHasHeader = !this._importHasHeader;
+          this.requestUpdate();
           break;
 
         case 'updateImportData':
           this._importIsValid = false;
-          this._importData = output.value;
+          this._importData = input.value;
+          this.requestUpdate();
           break;
 
         case 'validateImport':
           this._parseImport();
+          if (this._importIsValid) {
+            this.requestUpdate();
+          }
           break;
 
         //  END:  Private actions
         // --------------------------------------
       }
-
-      console.group('handler() option-list-editor')
-      console.log('ok:', ok)
-      console.log('bits:', bits)
-      console.log('output:', output)
-      console.groupEnd()
 
       if (ok === true) {
         // Update event data
@@ -1995,7 +2002,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
   private _getDemoSelect()  : TemplateResult {
     let tmp = this.options.filter(
       (item : ISingleInputOption, index: number) => {
-        return item.show === true && this._emptyIsOK(item, index)
+        return (item.show === true && this._emptyIsOK(item, index));
       }
     );
 
@@ -2112,7 +2119,6 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
   private _renderImportUI() : TemplateResult {
     const id = this.id + '____0__';
     const handler = this._getHandler();
-    // console.group('_renderImportUI()')
 
     let sep = this._importSep;
     switch (sep) {
@@ -2128,8 +2134,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
       case '\l':
         sep = '\\l';
         break;
-    }
-    // console.groupEnd();
+    };
 
     return html`
       <button id="${this.id}____1__showImportModal" class="close-bg" @click=${handler}>Close import</button>
@@ -2344,12 +2349,10 @@ export const toggleSelectedOption = (
   options: Array<ISingleInputOption>, index: number, allowMulti: boolean = false
 ) : Array<ISingleInputOption> => {
   const output = [...options];
-  let ok = false;
 
   if (allowMulti) {
     for (let a = 0; a < output.length; a += 1) {
       if (index === a) {
-        ok = true;
         output[a] =  {
           ...output[a],
           selected: !output[a].selected
@@ -2360,7 +2363,6 @@ export const toggleSelectedOption = (
   } else {
     for (let a = 0; a < output.length; a += 1) {
       if (index === a) {
-        ok = true;
         output[a] =  {
           ...output[a],
           selected: !output[a].selected
