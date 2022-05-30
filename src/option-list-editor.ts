@@ -198,6 +198,8 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
 
   private _firstIsEmpty : boolean = false;
 
+  private _changed : boolean = false;
+
   // private _canAdd : boolean = true;
   // private _focusIndex : number = -1;
   // private _focusField : string = '';
@@ -690,13 +692,6 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
         );
       }
 
-      const tmp = this.getElementsByTagName('option');
-      this.mode = this.mode.trim().toLowerCase().replace(/[^a-z]+/ig, '');
-
-      if (this.mode !== 'radio' && this.mode !== 'checkbox') {
-        this.mode = 'select'
-      }
-
       this.allowMulti = (this.mode === 'checkbox')
         ? true
         : this.allowMulti;
@@ -711,62 +706,13 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
         ? true
         : this.allowHideByDate;
 
-      for (let a = 0; a < tmp.length; a += 1) {
-        const _tmp = tmp[a] as HTMLOptionElement;
-        let groupLabel = '';
+      this.mode = this.mode.trim().toLowerCase().replace(/[^a-z]+/ig, '');
 
-        // See if we need and are able to get the group name for this option
-        if (this.allowGroup) {
-          if (_tmp.parentElement instanceof HTMLOptGroupElement) {
-            const optGrp = _tmp.parentElement as HTMLOptGroupElement;
-
-            groupLabel = (typeof optGrp.label === 'string')
-              ? optGrp.label.trim()
-              : '';
-          } else if (typeof _tmp.dataset.group === 'string') {
-            groupLabel = (_tmp.dataset.group as string).trim();
-          }
-
-          this._groupNames = addToGroupNames(this._groupNames, groupLabel);
-        }
-
-        const option : ISingleInputOption = {
-          value: _tmp.value,
-          label: (_tmp.innerText !== '')
-            ? _tmp.innerText
-            : _tmp.value,
-          selected: _tmp.selected,
-          show: !_tmp.disabled,
-          group: groupLabel,
-          hideBefore: (typeof _tmp.dataset.hidebefore === 'string')
-            ? _tmp.dataset.hidebefore as string
-            : '',
-          hideAfter: (typeof _tmp.dataset.hideafter === 'string')
-            ? _tmp.dataset.hidebefore as string
-            : ''
-        };
-
-        if (option.label === '') {
-          // Only new/added options can have an empty label
-          // this option has no label so we'll ignore it.
-          continue;
-        }
-
-        if (option.value === '') {
-          if (this.options.length > 0 || !this.allowEmptyFirst) {
-            option.value = option.label;
-          }
-        }
-
-        this.options.push(option)
-
-        if (option.hideBefore !== '') {
-          this.showHideBefore = true;
-        }
-        if (option.hideAfter !== '') {
-          this.showHideAfter = true;
-        }
+      if (this.mode !== 'radio' && this.mode !== 'checkbox') {
+        this.mode = 'select'
       }
+
+      this._parseInitialOptions();
 
       let c = 1;
       if (!this.hideValue) {
@@ -776,6 +722,88 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
         c += 1;
       }
       this._colCount = c;
+    }
+  }
+
+  /**
+   * Parse all the options nested within the `<option-list-editor>`
+   * to build the internal state of the component.
+   */
+  private _parseInitialOptions() {
+    const tmp = this.getElementsByTagName('option');
+
+    /**
+     * Used to detect whether multiple options have been selected
+     * by default
+     */
+    let _selected = false;
+
+    for (let a = 0; a < tmp.length; a += 1) {
+      const _tmp = tmp[a] as HTMLOptionElement;
+      let groupLabel = '';
+
+      // See if we need and are able to get the group name for this option
+      if (this.allowGroup) {
+        if (typeof _tmp.dataset.group === 'string') {
+          groupLabel = (_tmp.dataset.group as string).trim();
+        } else if (_tmp.parentElement instanceof HTMLOptGroupElement) {
+          const optGrp = _tmp.parentElement as HTMLOptGroupElement;
+
+          groupLabel = (typeof optGrp.label === 'string')
+            ? optGrp.label.trim()
+            : '';
+        }
+
+        this._groupNames = addToGroupNames(this._groupNames, groupLabel);
+      }
+
+      if (_tmp.selected === true) {
+        if (_selected === true) {
+          // This one is selected by default and we've previously seen
+          // at least one is also selected by default.
+          // We'll let allow multi decide the current selected state
+          _tmp.selected = this.allowMulti;
+        }
+
+        _selected = true;
+      }
+
+      const option : ISingleInputOption = {
+        value: _tmp.value,
+        label: (_tmp.innerText !== '')
+          ? _tmp.innerText
+          : _tmp.value,
+        selected: _tmp.selected,
+        show: !_tmp.disabled,
+        group: groupLabel,
+        hideBefore: (typeof _tmp.dataset.hidebefore === 'string')
+          ? _tmp.dataset.hidebefore as string
+          : '',
+        hideAfter: (typeof _tmp.dataset.hideafter === 'string')
+          ? _tmp.dataset.hidebefore as string
+          : ''
+      };
+
+      if (option.label === '') {
+        // Only new/added options can have an empty label
+        // this option has no label so we'll ignore it.
+        continue;
+      }
+
+      if (option.value === '') {
+        if (this.options.length > 0 || !this.allowEmptyFirst) {
+          option.value = option.label;
+        }
+      }
+
+      this.options.push(option)
+
+      if (option.hideBefore !== '') {
+        this.showHideBefore = true;
+      }
+      if (option.hideAfter !== '') {
+        this.showHideAfter = true;
+      }
     }
   }
 
@@ -1215,7 +1243,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
 
       // Get only the bits of the ID that we need
       const bits = input.id.replace(/^.*?____(?=[0-9]+__[a-z]+)/i, '').split('__');
-      let ok = false;
+      let external = false;
       const ind = parseInt(bits[0]);
       const field = (typeof bits[2] === 'string')
         ? bits[2].toLowerCase()
@@ -1236,9 +1264,9 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
 
         case 'toggle':
           if (field === 'show') {
-            ok = data._toggleShow(ind);
+            external = data._toggleShow(ind);
           } else if (field === 'selected') {
-            ok = this._toggleSelected(ind);
+            external = this._toggleSelected(ind);
           }
           output = {
             index: ind,
@@ -1249,7 +1277,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
           break;
 
         case 'update':
-          ok = data._update(ind, field, input.value);
+          external = data._update(ind, field, input.value);
           output = {
             index: ind,
             action: 'UPDATE',
@@ -1259,40 +1287,40 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
           break;
 
         case 'move':
-          ok = data._move(ind, input.value);
+          external = data._move(ind, input.value);
           output.action = 'MOVE';
           output.index = ind;
           break;
 
         case 'delete':
-          ok = data._delete(output.index);
+          external = data._delete(output.index);
           output.action = 'DELETE';
           output.index = ind;
           break;
 
         case 'add':
-          ok = data._add();
+          external = data._add();
           output.action = 'ADD';
           break;
 
         case 'sort':
-          ok = data._sort();
+          external = data._sort();
           output.action = 'SORT';
           break;
 
         case 'importAppend':
-          ok = data._import('append');
+          external = data._import('append');
           output.action = 'APPENDIMPORTED';
           break;
 
         case 'importReplace':
-          ok = data._import('replace');
+          external = data._import('replace');
           output.action = 'IMPORTREPLACE';
           break;
 
         case 'save':
           // ok = data.options.filter(item => item.error !== '');
-          ok = true;
+          external = true;
           output.action = 'SAVE';
           break;
 
@@ -1347,9 +1375,11 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
         // --------------------------------------
       }
 
-      if (ok === true) {
+      if (external === true) {
         // Update event data
         this.eventData = output;
+
+        this._changed = (output.action !== 'SAVE');
 
         // Dispatch a change a event so outside world knows
         // something happened
@@ -2265,7 +2295,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
         ? this._renderImportUI()
         : ''
       }
-      ${(this.showSave)
+      ${(this.showSave && this._changed)
         ? html`<button id="${this.id}____0__save" class="action-btn action-btn--save" @click=${this._getHandler()}>Save</button>`
         : ''
       }
