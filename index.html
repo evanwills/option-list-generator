@@ -29,13 +29,24 @@
 			--wc-outline-width: 0.25rem;
 			--wc-outline-style: dotted;
 			--wc-outline-offset: 0.2rem;
+
+			/* --wc-btn-bg-colour: hotpink;
+			--wc-btn-visible-bg-colour: yellow; */
+			/* --wc-btn-delete-bg-colour: #900;
+			--wc-btn-border-style: none; */
+
+			--wc-btn-delete-bg-colour: #800;
+			--wc-btn-sort-bg-colour: #006;
+			--wc-btn-save-bg-colour: #051;
+			--wc-btn-import-bg-colour: #051;
+			--wc-btn-add-bg-colour: #051;
 		}
 	</style>
   </head>
   <body>
 
 	<h1>&lt;option-list-editor&gt;</h1>
-    <option-list-editor id="new" allowemptyfirst mode="radio">
+    <option-list-editor id="new" allowemptyfirst allowhidebydate allowgroup allowimport showsave>
 		<option value="">-- please choose --</option>
 		<optgroup label="Wills">
 			<option value="evan">Evan</option>

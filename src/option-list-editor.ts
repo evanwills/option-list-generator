@@ -73,7 +73,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
    * delimited text
    */
   @property({ type: Boolean })
-  alllowImport : boolean = false;
+  allowImport : boolean = false;
 
   /**
    * Whether or not to allow options with duplicate labels or values
@@ -230,11 +230,45 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
     --wc-outline-style: dotted;
     --wc-outline-offset: 0.2rem;
 
-    --wc-btn-colour: var(--wc-text-colour);
     --wc-btn-bg-colour: var(--wc-bg-colour);
+    --wc-btn-txt-colour: var(--wc-text-colour);
     --wc-btn-weight: bold;
     --wc-btn-padding: 0.3rem 0.5rem;
     --wc-btn-border-style: solid;
+
+    --wc-btn-toggle-bg-colour: var(--wc-btn-bg-colour);
+    --wc-btn-toggle-txt-colour: var(--wc-btn-txt-colour);
+
+    --wc-btn-visible-bg-colour: var(--wc-btn-toggle-bg-colour);
+    --wc-btn-visible-txt-colour: var(--wc-btn-toggle-txt-colour);
+    --wc-btn-selected-bg-colour: var(--wc-btn-toggle-bg-colour);
+    --wc-btn-selected-txt-colour: var(--wc-btn-toggle-txt-colour);
+    --wc-btn-showvalue-txt-bg-colour: var(--wc-btn-toggle-bg-colour);
+    --wc-btn-showvalue-txt-colour: var(--wc-btn-toggle-txt-colour);
+    --wc-btn-showgroup-txt-bg-colour: var(--wc-btn-toggle-bg-colour);
+    --wc-btn-showgroup-txt-colour: var(--wc-btn-toggle-txt-colour);
+    --wc-btn-hidebydate-bg-colour: var(--wc-btn-toggle-bg-colour);
+    --wc-btn-hidebydate-txt-colour: var(--wc-btn-toggle-txt-colour);
+    --wc-btn-hidebefore-bg-colour: var(--wc-btn-hidebydate-bg-colour);
+    --wc-btn-hidebefore-txt-colour: var(--wc-btn-hidebefore-txt-colour);
+    --wc-btn-hideafter-bg-colour: var(--wc-btn-hidebefore-bg-colour);
+    --wc-btn-hideafter-txt-colour: var(--wc-btn-hidebefore-txt-colour);
+
+    --wc-btn-save-bg-colour: var(--wc-btn-bg-colour);
+    --wc-btn-save-txt-colour: var(--wc-btn-txt-colour);
+    --wc-btn-delete-bg-colour: var(--wc-btn-bg-colour);
+    --wc-btn-delete-txt-colour: var(--wc-btn-txt-colour);
+    --wc-btn-sort-txt-bg-colour: var(--wc-btn-bg-colour);
+    --wc-btn-sort-txt-colour: var(--wc-btn-txt-colour);
+    --wc-btn-add-txt-bg-colour: var(--wc-btn-bg-colour);
+    --wc-btn-add-txt-colour: var(--wc-btn-txt-colour);
+
+    --wc-btn-mv-bg-colour: var(--wc-btn-bg-colour);
+    --wc-btn-mv-txt-colour: var(--wc-btn-txt-colour);
+    --wc-btn-mv-up-bg-colour: var(--wc-btn-mv-bg-colour);
+    --wc-btn-mv-up-txt-colour: var(--wc-btn-mv-txt-colour);
+    --wc-btn-mv-down-bg-colour: var(--wc-btn-mv-bg-colour);
+    --wc-btn-mv-down-txt-colour: var(--wc-btn-mv-txt-colour);
 
     font-size: var(--wc-font-size);
     background-color: var(--wc-bg-colour);
@@ -253,7 +287,6 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
   }
   .whole {
     position: relative;
-    padding-bottom: 2rem;
   }
   h1, h2, h3, h4 {
     font-family: var(--wc-heading-font);
@@ -261,8 +294,10 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
   button {
     border-radius: var(--wc-border-radius);
     border-width: var(--wc-line-width);
-    border-color: var(--wc-text-colour);
+    border-color: var(--wc-btn-colour);
     border-style: var(--wc-btn-border-style);
+    color: var(--wc-btn-colour);
+    background-color: var(--wc-btn-bg-colour);
     padding: var(--wc-btn-padding);
     display: inline-block;
   }
@@ -346,6 +381,65 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
     text-transform: capitalize;
     margin-right: 1rem;
   }
+  .toggle-btn--show {
+    background-color: var(--wc-btn-visible-bg-colour);
+    border-color: var(--wc-btn-visible-txt-colour);
+    color: var(--wc-btn-visible-txt-colour);
+  }
+  .toggle-btn--selected {
+    background-color: var(--wc-btn-selected-bg-colour);
+    border-color: var(--wc-btn-selected-txt-colour);
+    color: var(--wc-btn-selected-txt-colour);
+  }
+  .toggle-btn--value {
+    background-color: var(--wc-btn-showvalue-bg-colour);
+    border-color: var(--wc-btn-showvalue-txt-colour);
+    color: var(--wc-btn-showvalue-txt-colour);
+  }
+  .toggle-btn--group {
+    background-color: var(--wc-btn-showgroup-bg-colour);
+    border-color: var(--wc-btn-showgroup-txt-colour);
+    color: var(--wc-btn-showgroup-txt-colour);
+  }
+  .toggle-btn--delete {
+    background-color: var(--wc-btn-delete-bg-colour);
+    border-color: var(--wc-btn-delete-txt-colour);
+    color: var(--wc-btn-delete-txt-colour);
+  }
+  .toggle-btn--hideBeforeShow {
+    background-color: var(--wc-btn-hidebefore-bg-colour);
+    border-color: var(--wc-btn-hidebefore-txt-colour);
+    color: var(--wc-btn-hidebefore-txt-colour);
+  }
+  .toggle-btn--hideAfterShow {
+    background-color: var(--wc-btn-hideafter-bg-colour);
+    border-color: var(--wc-btn-hideafter-txt-colour);
+    color: var(--wc-btn-hideafter-txt-colour);
+  }
+  .action-btn--add {
+    background-color: var(--wc-btn-add-bg-colour);
+    border-color: var(--wc-btn-add-txt-colour);
+    color: var(--wc-btn-add-txt-colour);
+  }
+  .action-btn--import {
+    background-color: var(--wc-btn-import-bg-colour);
+    border-color: var(--wc-btn-import-txt-colour);
+    color: var(--wc-btn-import-txt-colour);
+  }
+  .action-btn--sort {
+    background-color: var(--wc-btn-sort-bg-colour);
+    border-color: var(--wc-btn-sort-txt-colour);
+    color: var(--wc-btn-sort-txt-colour);
+  }
+  .action-btn--save {
+    background-color: var(--wc-btn-save-bg-colour);
+    border-color: var(--wc-btn-save-txt-colour);
+    color: var(--wc-btn-save-txt-colour);
+    position: absolute;
+    right: 0.5rem;
+    top: 0.3rem;
+  }
+
   /* .toggle-btn:last-child {
     margin-right: 0;
   } */
@@ -487,12 +581,20 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
     left: 0.5rem;
   }
   .extra-controls {
-    position: absolute;
-    bottom: 0.5rem;
-    right: 0.5rem;
+    display: flex;
+    padding: 0 0.5rem 1rem;
   }
-  .extra-controls > button {
-    margin-left: 1rem;
+  .extra-controls__other {
+    flex-grow: 1;
+    text-align: right;
+    display: flex;
+    justify-content: end;
+    gap: 1rem;
+  }
+  .extra-controls__other > button {
+    margin: 0;
+  }
+  .extra-controls__other > button:last-child {
   }
   .demo {
     display: flex;
@@ -524,11 +626,6 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
     margin: 0  1rem 0.5rem 0;
     padding: 0;
     display: inline-block;
-  }
-  .save-btn {
-    position: absolute;
-    top: 0.3rem;
-    right: 0.5rem;
   }
 
   @media screen and (min-width: 48rem) {
@@ -1791,9 +1888,12 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
     const str = (show === true)
       ? 'Hide'
       : 'Show';
+    const mid = action.substring(0, 4) === 'hide'
+      ? 'hide-by'
+      : action.substring(0, 5)
 
     return html`
-    <button id="${id}____0__${action}" @click=${handler}>${str} ${label}</button>`
+    <button id="${id}${action}" class="toggle-btn toggle-btn--${mid} toggle-btn--${action}" @click=${handler}>${str} ${label}</button>`
   }
 
   /**
@@ -1806,11 +1906,11 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
     const handler = this._getHandler();
     const id = this.id + '____0__';
     const addBtn = (this._okToAdd())
-      ? html`<button id="${this.id}____0__add" @click=${handler} class="add">
+      ? html`<span class="extra-controls__add"><button id="${this.id}____0__add" class="action-btn action-btn--add" @click=${handler} class="add">
         Add ${(this.options.length === 0)
           ? 'first'
           : 'another'
-        } option</button>`
+        } option</button></span>`
       : '';
     const sortTitle = this.showGroup
         ? 'group then '
@@ -1818,32 +1918,34 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
     this._firstIsEmpty = (typeof this.options[0] !== 'undefined' && this.options[0].value === '');
 
     return html`
-        <ul class="single-option__wrap">
-          ${repeat(this.options, item => item.value, this._getSingleEditableOption())}
-        </ul>
-    ${addBtn}
-    <div class="extra-controls">
-      <button id="${this.id}____0__sort" @click=${handler} title="Sort options alphabetically by ${sortTitle}label">Sort options</button>
-      ${this._getShowHideBtn(id, 'valueShow', 'value input', this.hideValue, handler)}
-      ${(this.allowGroup)
-        ? this._getShowHideBtn(id, 'groupShow', 'group input', this.showGroup, handler)
-        : ''
-      }
-      ${(this.allowHideByDate)
-        ? html`
-          ${this._getShowHideBtn(id, 'hideBeforeShow', 'hide before', this.showHideBefore, handler)}
-          ${this._getShowHideBtn(id, 'hideAfterShow', 'hide after', this.showHideAfter, handler)}
-        `
-        : ''
-      }
-      ${(this.alllowImport)
-        ? html`
-            <button id="${this.id}____0__showImportModal" @click=${handler}>
-              Import
-            </button>`
-        : ''
-      }
-    </div>`;
+      <ul class="single-option__wrap">
+        ${repeat(this.options, item => item.value, this._getSingleEditableOption())}
+      </ul>
+      <div class="extra-controls">
+        ${addBtn}
+        <span class="extra-controls__other">
+          <button id="${this.id}____0__sort" class="action-btn action-btn--sort" @click=${handler} title="Sort options alphabetically by ${sortTitle}label">Sort options</button>
+          ${this._getShowHideBtn(id, 'valueShow', 'value input', !this.hideValue, handler)}
+          ${(this.allowGroup)
+            ? this._getShowHideBtn(id, 'groupShow', 'group input', this.showGroup, handler)
+            : ''
+          }
+          ${(this.allowHideByDate)
+            ? html`
+              ${this._getShowHideBtn(id, 'hideBeforeShow', 'hide before', this.showHideBefore, handler)}
+              ${this._getShowHideBtn(id, 'hideAfterShow', 'hide after', this.showHideAfter, handler)}
+            `
+            : ''
+          }
+          ${(this.allowImport)
+            ? html`
+                <button id="${this.id}____0__showImportModal" class="action-btn action-btn--import" @click=${handler}>
+                  Import
+                </button>`
+            : ''
+          }
+        </span>
+      </div>`;
   }
 
 
@@ -2159,7 +2261,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
         : ''
       }
       ${(this.showSave)
-        ? html`<button id="${this.id}____0__save" class="save-btn" @click=${this._getHandler()}>Save</button>`
+        ? html`<button id="${this.id}____0__save" class="action-btn action-btn--save" @click=${this._getHandler()}>Save</button>`
         : ''
       }
       </div>
