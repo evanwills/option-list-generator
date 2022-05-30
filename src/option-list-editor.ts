@@ -2,7 +2,7 @@ import { html, css, LitElement, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { ifDefined } from 'lit/directives/if-defined.js';
 import { repeat } from 'lit/directives/repeat.js';
-import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } from './types/option-list-editor.d';
+import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup, ISingleInputOptionSimple } from './types/option-list-editor.d';
 
 /**
  * `<option-list-editor>` Is a web component for editing HTML
@@ -774,13 +774,16 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
           ? _tmp.innerText
           : _tmp.value,
         selected: _tmp.selected,
-        show: !_tmp.disabled,
+        hide: !_tmp.disabled,
         group: groupLabel,
         hideBefore: (typeof _tmp.dataset.hidebefore === 'string')
           ? _tmp.dataset.hidebefore as string
           : '',
         hideAfter: (typeof _tmp.dataset.hideafter === 'string')
           ? _tmp.dataset.hidebefore as string
+          : '',
+        title: (typeof _tmp.dataset.title === 'string')
+          ? _tmp.dataset.title as string
           : ''
       };
 
@@ -847,7 +850,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
    * @returns TRUE if the option is hidden of both value & label are empty
    */
   private _canBeDeleted(option : ISingleInputOption) : boolean {
-    return (option.show === false || (option.value == '' && option.label === ''));
+    return (option.hide === false || (option.value == '' && option.label === ''));
   }
 
   private _emptyIsOK(option : ISingleInputOption, index : number) : boolean {
@@ -963,7 +966,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
       output = rowSep + this.options[index].value +
                colSep  + this.options[index].label +
                colSep  + this.options[index].selected +
-               colSep  + this.options[index].show;
+               colSep  + this.options[index].hide;
 
       if (this.showGroup) {
         output += colSep + this.options[index].group;
@@ -1025,10 +1028,19 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
   /**
    * Get list of options as JSON object
    *
+   * > __NOTE:__ By default, this method omits
+   *
+   * @param fullData Whether or not to return full json object for
+   *                 each option or a simplified version
+   *
    * @returns JSON for list of options.
    */
-  public optionsToJson() : string {
-    return JSON.stringify(this.options);
+  public optionsToJson(fullData : boolean = false) : string {
+    let output : Array<ISingleInputOptionSimple> = (fullData === true)
+      ? [...this.options]
+      : getSimplifiedOptionData(this.options);
+
+    return JSON.stringify(output);
   }
 
   /**
@@ -1046,10 +1058,11 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
       value : -1,
       label : -1,
       selected : -1,
-      show : -1,
+      hide : -1,
       group : -1,
       hideBefore : -1,
-      hideAfter : -1
+      hideAfter : -1,
+      title : -1
     }
 
     for (let a = 0; a < headerRow.length; a += 1) {
@@ -1067,7 +1080,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
           break;
         case 'visable':
         case 'show':
-          cols.show = a;
+          cols.hide = a;
           break;
         case 'group':
           cols.group = a;
@@ -1077,6 +1090,9 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
           break;
         case 'hideafter':
           cols.hideAfter = a;
+          break;
+        case 'title':
+          cols.title = a;
           break;
       }
     }
@@ -1128,10 +1144,11 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
       value : 0,
       label : 1,
       selected : 2,
-      show : 3,
+      hide : 3,
       group : 4,
       hideBefore : 5,
-      hideAfter : 6
+      hideAfter : 6,
+      title : 7
     }
 
     if (this._importHasHeader) {
@@ -1156,10 +1173,11 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
         value: this._getStr(tmp, a, cols.value, 128),
         label: this._getStr(tmp, a, cols.label, 512),
         selected: this._str2bool(this._getStr(tmp, a, cols.selected, 4)),
-        show: this._str2bool(this._getStr(tmp, a, cols.show, 4)),
+        hide: this._str2bool(this._getStr(tmp, a, cols.hide, 4)),
         group: this._getStr(tmp, a, cols.group).substring(0, 64),
         hideBefore: this._getValidDate(this._getStr(tmp, a, cols.hideBefore, 64)),
-        hideAfter: this._getValidDate(this._getStr(tmp, a, cols.hideAfter, 64))
+        hideAfter: this._getValidDate(this._getStr(tmp, a, cols.hideAfter, 64)),
+        title: this._getValidDate(this._getStr(tmp, a, cols.title, 255))
       }
 
       if (!this._emptyIsOK(opt, b) && opt.label !== '') {
@@ -1418,7 +1436,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
         ok = true;
         output[a] =  {
           ...output[a],
-          show: !output[a].show
+          hide: !output[a].hide
         }
         break;
       }
@@ -1526,10 +1544,11 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
         selected: false,
         group: '',
         label: '',
-        show: true,
+        hide: false,
         hideAfter: '',
         hideBefore: '',
-        value: ''
+        value: '',
+        title: ''
       });
 
       this.requestUpdate();
@@ -1680,7 +1699,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
     }
 
     return (option: ISingleInputOption, index: number) : TemplateResult|string => {
-      if (data.hideHidden && option.show === false) {
+      if (data.hideHidden && option.hide === true) {
         return '';
       }
 
@@ -1695,7 +1714,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
           ${(!data.hideHidden)
             ? html`
               <span class="toggle-btn toggle-btn--show">
-                ${this._getShowLabel(option.show, pos)}
+                ${this._getShowLabel(!option.hide, pos)}
               </span>`
             : ''
           }
@@ -1863,7 +1882,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
     const handler = data._getHandler();
 
     return (option: ISingleInputOption, index: number): TemplateResult|string => {
-      if (data.hideHidden && option.show === false) {
+      if (data.hideHidden && option.hide === true) {
         return '';
       }
       const pos = index + 1;
@@ -1881,13 +1900,13 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
       const up = (index !== 1 || !this._firstIsEmpty)
 
       return html`
-        <li class="single-option cols-${data._colCount} is-${(option.show) ? 'shown' : 'hidden'}${(data.readonly ? 'is-readonly' : '')}${data._getColClass()}${isMid}">
+        <li class="single-option cols-${data._colCount} is-${(!option.hide) ? 'shown' : 'hidden'}${(data.readonly ? 'is-readonly' : '')}${data._getColClass()}${isMid}">
 
           ${data._getEditableTextField(option.value as string, 'value', pos, id, !data.hideValue, handler)}
           ${data._getEditableTextField(option.label as string, 'label', pos, id, true, handler)}
           ${data._getEditableTextField(option.group as string, 'group', pos, id, (data.allowGroup && data.showGroup && option.value !== ''), handler)}
           <div class="toggle-block">
-            ${(!data.hideHidden) ? data._getToggleBtn(id, option.show, 'show', pos, handler) : ''}
+            ${(!data.hideHidden) ? data._getToggleBtn(id, !option.hide, 'show', pos, handler) : ''}
             ${data._getToggleBtn(id, option.selected, 'selected', pos, handler)}
             ${(this._canBeDeleted(option))
               ? html`
@@ -2032,7 +2051,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
   private _getDemoSelect()  : TemplateResult {
     let tmp = this.options.filter(
       (item : ISingleInputOption, index: number) => {
-        return (item.show === true && this._emptyIsOK(item, index));
+        return (item.hide === false && this._emptyIsOK(item, index));
       }
     );
 
@@ -2092,7 +2111,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup } 
    */
   private _getDemoCheckable() : TemplateResult|string {
     let tmp = this.options.filter(
-      (item : ISingleInputOption) => (item.show === true && item.value !== '')
+      (item : ISingleInputOption) => (item.hide === false && item.value !== '')
     ).map(
       (item : ISingleInputOption, index: number) : TemplateResult => html`
           <li>
@@ -2442,7 +2461,7 @@ export const deleteSelectedOption = (
  * @returns TRUE if the option is hidden of both value & label are empty
  */
 const _canBeDeleted = (option : ISingleInputOption) : boolean => {
-  return (option.show === false || (option.value == '' && option.label === ''));
+  return (option.hide === true || (option.value == '' && option.label === ''));
 }
 
 
@@ -2562,6 +2581,94 @@ export const addToGroupNames = (allGroupNames: Array<string>, newName: string) :
   return allGroupNames;
 }
 
+/**
+ * Strip unneeded properties from option objects
+ *
+ * `hide` & `selected` are omitted if FALSE
+ * `label` is omitted if `value` & `label` are identical
+ * `group`, `hideBefore` & `hideAfter` are omitted if they are empty
+ *
+ * @param options List of options containing full data
+ *
+ * @returns List of options containing only the minimum required
+ *          properties to accurately represent the data
+ */
+export const getSimplifiedOptionData = (options : Array<ISingleInputOption>) : Array<ISingleInputOptionSimple> => {
+  return options.filter(
+    (option : ISingleInputOption) => (option.label !== '')
+  ).map((option : ISingleInputOption) => {
+    const tmp : ISingleInputOptionSimple = {
+      value: option.value
+    };
+
+    if (option.value !== option.label) {
+      tmp.label = option.label
+    }
+
+    if (option.hide === true) {
+      tmp.hide = true;
+    }
+
+    if (option.selected === true) {
+      tmp.selected = true;
+    }
+
+    if (option.group !== '') {
+      tmp.group = option.group;
+    }
+
+    if (option.hideBefore !== '') {
+      tmp.hideBefore = option.hideBefore;
+    }
+
+    if (option.hideAfter !== '') {
+      tmp.hideAfter = option.hideAfter;
+    }
+
+    if (option.title !== '') {
+      tmp.title = option.title;
+    }
+    return tmp;
+  });
+}
+
+/**
+ * Make sure each option in list has all the properties available
+ * to it.
+ *
+ * To save disc space option data is simplified for storage. This
+ * ensures that all options have the properties that are expected
+ *
+ * @param options Options with simplified data
+ *
+ * @returns List of options with full data.
+ */
+export const getFullOptionData = (
+  options : Array<ISingleInputOptionSimple>
+) : Array<ISingleInputOption> => {
+  return options.map((option: ISingleInputOptionSimple) : ISingleInputOption => {
+    return {
+      value: option.value,
+      label: (typeof option.label === 'string' && option.label !== '')
+        ? option.label
+        : option.value,
+      selected: (typeof option.selected === 'boolean' && option.selected === true),
+      hide: (typeof option.hide === 'boolean' && option.hide === true),
+      group: (typeof option.group === 'string')
+        ? option.group
+        : '',
+      hideBefore: (typeof option.hideBefore === 'string')
+        ? option.hideBefore
+        : '',
+      hideAfter: (typeof option.hideAfter === 'string')
+        ? option.hideAfter
+        : '',
+      title: (typeof option.title === 'string')
+        ? option.title
+        : ''
+    }
+  })
+}
 
 // START:  Shared state manipulation methods
 // ======================================================

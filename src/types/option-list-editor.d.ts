@@ -1,5 +1,54 @@
 
-export interface ISingleInputOption {
+export interface ISingleInputOptionSimple {
+  /**
+   * The value of the option
+   * (Also used as the label for the option if the label is empty)
+   */
+  value : string,
+  /**
+   * Human readable label for the option (what users see)
+   */
+  label ? : string,
+  /**
+   * Whether or not this option should be checked/selected by default
+   * [default: `false`]
+   */
+  selected ? : boolean,
+  /**
+   * Whether or not this option will be rendered for end users
+   * [default: `true`]
+   */
+  hide ? : boolean,
+  /**
+   * Group the option belongs to
+   */
+  group ? : string,
+  /**
+   * ISO 8601 date/time string
+   * Allows users to provide a date, before which, the option is
+   * hidden
+   */
+  hideBefore ? : string,
+  /**
+   * ISO 8601 date/time string
+   * Allows users to provide a date, after which, the option is
+   * hidden
+   */
+  hideAfter ? : string,
+  /**
+   * Title attribute for `<OPTION>`
+   *
+   * Sometimes it's useful to have some explanitory text to give
+   * users more information about an option.
+   *
+   * `<OPTION>` title
+   * attributes are shown to the user on hover and read aloud by
+   * screen readers.
+   */
+  title ? : string
+}
+
+export interface ISingleInputOption extends ISingleInputOptionSimple {
   /**
    * The value of the option
    * (Also used as the label for the option if the label is empty)
@@ -11,10 +60,14 @@ export interface ISingleInputOption {
   label : string,
   /**
    * Whether or not this option should be checked/selected by default
+   * [default: `false`]
    */
   selected : boolean,
-  /** Whether or not this option will be rendered for end users */
-  show : boolean,
+  /**
+   * Whether or not this option will be rendered for end users
+   * [default: `true`]
+   */
+  hide : boolean,
   /**
    * Group the option belongs to
    */
@@ -30,7 +83,18 @@ export interface ISingleInputOption {
    * Allows users to provide a date, after which, the option is
    * hidden
    */
-  hideAfter : string
+  hideAfter : string,
+  /**
+   * Title attribute for `<OPTION>`
+   *
+   * Sometimes it's useful to have some explanitory text to give
+   * users more information about an option.
+   *
+   * `<OPTION>` title
+   * attributes are shown to the user on hover and read aloud by
+   * screen readers.
+   */
+  title: string
 }
 
 
@@ -80,8 +144,9 @@ export interface IInputOptionImportHead {
   value : number,       // 0
   label : number,       // 1
   selected : number,    // 2
-  show : number,        // 3
+  hide : number,        // 3
   group : number,       // 4
   hideBefore : number,  // 5
   hideAfter : number,   // 6
+  title : number,       // 7
 }
