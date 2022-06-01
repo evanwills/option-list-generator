@@ -49,51 +49,13 @@ export interface ISingleInputOptionSimple {
 }
 
 export interface ISingleInputOption extends ISingleInputOptionSimple {
-  /**
-   * The value of the option
-   * (Also used as the label for the option if the label is empty)
-   */
-  value : string,
-  /**
-   * Human readable label for the option (what users see)
-   */
-  label : string,
-  /**
-   * Whether or not this option should be checked/selected by default
-   * [default: `false`]
-   */
-  selected : boolean,
-  /**
-   * Whether or not this option will be rendered for end users
-   * [default: `true`]
-   */
-  hide : boolean,
-  /**
-   * Group the option belongs to
-   */
-  group : string,
-  /**
-   * ISO 8601 date/time string
-   * Allows users to provide a date, before which, the option is
-   * hidden
-   */
-  hideBefore : string,
-  /**
-   * ISO 8601 date/time string
-   * Allows users to provide a date, after which, the option is
-   * hidden
-   */
-  hideAfter : string,
-  /**
-   * Title attribute for `<OPTION>`
-   *
-   * Sometimes it's useful to have some explanitory text to give
-   * users more information about an option.
-   *
-   * `<OPTION>` title
-   * attributes are shown to the user on hover and read aloud by
-   * screen readers.
-   */
+  value: string,
+  label: string,
+  selected: boolean,
+  group: string,
+  hide: boolean,
+  hideBefore: string
+  hideAfter: string,
   title: string
 }
 

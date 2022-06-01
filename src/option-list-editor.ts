@@ -5,21 +5,56 @@ import { repeat } from 'lit/directives/repeat.js';
 import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup, ISingleInputOptionSimple } from './types/option-list-editor.d';
 
 /**
+ * Make sure mode value is something we reconginise.
+ *
+ * @param mode  Output mode for options
+ * @param _type Not sure what this is.
+ *
+ * @returns A valid `<option-list-editor>` mode
+ */
+ const _parseMode = (mode: any, _type : any) : string => {
+  if (typeof mode !== 'string') {
+    return 'select';
+  }
+
+  const _mode = mode.trim().toLowerCase();
+
+  return (_mode === 'radio' || _mode === 'checkbox')
+    ? _mode
+    : 'select';
+}
+
+/**
  * `<option-list-editor>` Is a web component for editing HTML
  * `<SELECT>` input field options and/or lists of
  * `<INPUT type="radio">` or `<INPUT type="checkbox">` fields
  *
- * You provide the component with a list of option elements and
+ * You provide the component with a list of option and
  * `<option-list-editor>` provides an edit interface for those
  * options.
  *
- * While this element doesn't contain a `<slot>` it looks for child
- * `<option>` & `<optgroup>` HTML elements which it then parses to
- * extract the data it needs to build up an edit interface for the
- * provided options.
+ * Options can be supplied in to ways:
+ * 1. If `<option-list-editor>` is used as a stand-alone web
+ *    component, then Options can be provided using standard html
+ *    `<OPTION>` & `<OPTGROUP>` elements nested within
+ *    `<option-list-editor>`.
+ *    While `<option-list-editor>` doesn't contain a `<slot>` it
+ *    looks for child `<OPTION>` & `<OPTGROUP>` HTML elements within
+ *    opening & closing tags, which it then parses to extract the
+ *    data it needs to build up an edit interface for the provided
+ *    options.
+ * 2. If `<option-list-editor>` is being rendered via JavaScript,
+ *    options can be passed in as an array of ISingleOption objects
+ *    via the `options` property. (This has the advantage of updating
+ *    the list of options each time they are changed by externa JS,
+ *    if `<option-list-editor>` is use multiple times)
+ *
+ * @author Evan Wills <evan.i.wills@gmail.com>
+ * @url    https://github.com/evanwills/option-list-generator
+ *
  */
 @customElement('option-list-editor')
- export class OptionListEditor extends LitElement {
+export class OptionListEditor extends LitElement {
 
   // ======================================================
   // START: Attribute declarations
@@ -27,79 +62,14 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup, I
   /**
    * How options are to be rendered
    */
-  @property({ reflect: true, type: String })
+  @property({ type: String, converter: { fromAttribute: _parseMode } })
   mode : string = 'select';
-
-  /**
-   * Whether or not to hide the value input field
-   */
-  @property({ type: Boolean })
-  hideValue : boolean = false;
-
-  /**
-   * Whether or not to hide disabled options
-   *
-   * i.e. Never render disabled options
-   */
-  @property({ type: Boolean })
-  hideHidden: boolean = false;
-
-  /**
-   * Whether or not to hide demo of options
-   */
-  @property({ type: Boolean })
-  hideDemo: boolean = false;
-
-  /**
-   * Whether or not to show the option group field
-   */
-  @property({ type: Boolean })
-  showGroup : boolean = false;
-
-  /**
-   * Whether or not to show the "Save" button
-   */
-  @property({ type: Boolean })
-  showSave : boolean = false;
-
-  /**
-   * Whether or not options can be sorted by client
-   */
-  @property({ type: Boolean })
-  noSort : boolean = false;
-
-  /**
-   * Whether or not to allow editors to bulk import options using
-   * delimited text
-   */
-  @property({ type: Boolean })
-  allowImport : boolean = false;
 
   /**
    * Whether or not to allow options with duplicate labels or values
    */
-  @property({ type: Boolean })
+  @property({ type: Boolean, attribute: 'allow-duplicate' })
   allowDuplicate : boolean = false;
-
-  /**
-   * Whether or not to allow multiple options to be
-   * selected/checked by default
-   */
-  @property({ type: Boolean })
-  allowMulti : boolean = false;
-
-  /**
-   * Whether or not to allow "Hide before" & "Hide after" date/time
-   * input field to be shown/hidden
-   */
-  @property({ type: Boolean })
-  allowHideByDate : boolean = false;
-
-  /**
-   * Whether or not to allow options to be grouped
-   */
-  @property({ type: Boolean })
-  allowGroup : boolean = false;
 
   /**
    * Whether or not to allow the first option in the list to have an
@@ -109,8 +79,97 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup, I
    * label. If `allowEmptyDefault` is `TRUE`, the first option will
    * only be required to have a non-empty label
    */
-  @property({ type: Boolean })
+  @property({ type: Boolean, attribute: 'allow-emptyfirst' })
   allowEmptyFirst : boolean = false;
+
+  /**
+   * Whether or not to allow options to be grouped
+   */
+  @property({ type: Boolean, attribute: 'allow-group' })
+  allowGroup : boolean = false;
+
+  /**
+   * Whether or not to allow "Hide before" & "Hide after" date/time
+   * input field to be shown/hidden
+   */
+  @property({ type: Boolean, attribute: 'allow-hidebydate' })
+  allowHideByDate : boolean = false;
+
+  /**
+   * Whether or not to allow editors to bulk import options using
+   * delimited text
+   */
+  @property({ type: Boolean, attribute: 'allow-import' })
+  allowImport : boolean = false;
+
+  /**
+   * Whether or not to allow multiple options to be
+   * selected/checked by default
+   */
+  @property({ type: Boolean, attribute: 'allow-multi' })
+  allowMulti : boolean = false;
+
+  /**
+   * Whether or not to allow "Title" attribute input field to be shown/hidden
+   */
+  @property({ type: Boolean, attribute: 'allow-title' })
+  allowTitle : boolean = false;
+
+  /**
+   * Whether or not to hide demo of options
+   */
+  @property({ type: Boolean, attribute: 'hide-demo' })
+  hideDemo: boolean = false;
+
+  /**
+   * Whether or not to hide disabled options
+   *
+   * i.e. Never render disabled options
+   */
+  @property({ type: Boolean, attribute: 'hide-hidden' })
+  hideHidden: boolean = false;
+
+  /**
+   * Whether or not to hide the value input field
+   */
+  @property({ reflect: true, type: Boolean, attribute: 'hide-value' })
+  hideValue : boolean = false;
+
+  /**
+   * Whether or not to show the option group field
+   */
+  @property({ reflect: true, type: Boolean, attribute: 'show-group' })
+  showGroup : boolean = false;
+
+  /**
+   * Whether or not "Hide after" date/time input field is shown
+   */
+  @property({ reflect: true, type: Boolean, attribute: 'show-hideafter' })
+  showHideAfter : boolean = false;
+
+  /**
+   * Whether or not "Hide before" date/time input field is shown
+   */
+  @property({ reflect: true, type: Boolean, attribute: 'show-hidebefore' })
+  showHideBefore : boolean = false;
+
+  /**
+   * Whether or not to show the "Save" button
+   */
+  @property({ type: Boolean, attribute: 'show-save' })
+  showSave : boolean = false;
+
+  /**
+   * Whether or not to show the "Save" button
+   */
+  @property({ reflect: true, type: Boolean, attribute: 'show-title' })
+  showTitle : boolean = false;
+
+  /**
+   * Whether or not options can be sorted by client
+   */
+  @property({ type: Boolean })
+  noSort : boolean = false;
 
   /**
    * Whether or not options are editable
@@ -119,22 +178,16 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup, I
   readonly : boolean = false;
 
   /**
-   * Whether or not "Hide before" date/time input field is shown
-   */
-  @property({ type: Boolean })
-  showHideBefore : boolean = false;
-
-  /**
-   * Whether or not "Hide after" date/time input field is shown
-   */
-  @property({ type: Boolean })
-  showHideAfter : boolean = false;
-
-  /**
    * Whether or not to put grouped options after ungrouped options
    */
-  @property({ type: Boolean })
+  @property({ reflect: true, type: Boolean })
   groupedLast : boolean = false;
+
+  /**
+   * List of all the options being managed by `<option-list-editor>`
+   */
+  @property({ type: Array })
+  options : Array<ISingleInputOption> = [];
 
 
   //  END:  Attribute declarations
@@ -147,12 +200,6 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup, I
    */
   @state()
   public doInit : boolean = true;
-
-  /**
-   * List of options
-   */
-  @state()
-  public options : Array<ISingleInputOption> = [];
 
   /**
    * Whether or not to do basic component initialisation stuff
@@ -331,6 +378,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup, I
     grid-template-areas: 'pos value move'
                          'pos label move'
                          'pos group move'
+                         'pos title move'
                          'pos toggle move'
                          'pos date move';
     grid-template-columns: 1.5rem 1fr 6rem;
@@ -354,6 +402,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup, I
     grid-template-areas: 'pos value'
                          'pos label'
                          'pos group'
+                         'pos title'
                          'pos toggle'
                          'pos date';
     grid-template-columns: 2rem 1fr;
@@ -422,6 +471,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup, I
     background-color: var(--wc-btn-add-bg-colour);
     border-color: var(--wc-btn-add-txt-colour);
     color: var(--wc-btn-add-txt-colour);
+    margin-right: 1rem;
   }
   .action-btn--import {
     background-color: var(--wc-btn-import-bg-colour);
@@ -456,6 +506,18 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup, I
   .group-block {
     grid-area: group;
     /* padding-bottom: 0.4rem; */
+  }
+  .title-block {
+    grid-area: title;
+    /* padding-bottom: 0.4rem; */
+    margin-top: -0.4rem;
+    padding-bottom: 0.4rem;
+  }
+  .label--title {
+    width: 3rem;
+  }
+  .input--title {
+    width: calc(100% - 3.3rem);
   }
   .toggle-block {
     grid-area: toggle;
@@ -588,6 +650,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup, I
   }
   .extra-controls__other {
     flex-grow: 1;
+    flex-wrap: wrap;
     text-align: right;
     display: flex;
     justify-content: end;
@@ -632,35 +695,41 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup, I
 
   @media screen and (min-width: 48rem) {
     .has-value {
-      grid-template-areas: 'pos value label move'
+      grid-template-areas: 'pos  value label  move'
+                           'pos  title title  move'
                            'pos toggle toggle move';
       grid-template-columns: 1.5rem 0.4fr 1.6fr 6rem;
     }
     .has-group {
-      grid-template-areas: 'pos label  group move'
+      grid-template-areas: 'pos  label group  move'
+                           'pos  title title  move'
                            'pos toggle toggle move';
       grid-template-columns: 1.5rem 1.6fr 0.4fr 6rem;
     }
     .has-value-and-group {
       grid-template-areas: 'pos value  label  group  move'
+                           'pos title  title  title  move'
                            'pos toggle toggle toggle move';
       grid-template-columns: 1.5rem 0.5fr 1.5fr 0.5fr 6rem;
     }
     .has-value.has-date {
       grid-template-areas: 'pos value  label  move'
                            'pos  date   date  move'
+                           'pos  title title  move'
                            'pos toggle toggle move';
       grid-template-columns: 1.5rem 0.5fr 1.5fr 6rem;
     }
     .has-group.has-date {
       grid-template-areas: 'pos label  group  move'
                            'pos  date   date  move'
+                           'pos  title title  move';
                            'pos toggle toggle move';
       grid-template-columns: 1.5rem 1.5fr 0.5fr 6rem;
     }
     .has-value-and-group.has-date {
       grid-template-areas: 'pos value  label  group  move'
-                           'pos  date   date   date  move'
+                           'pos date    date   date  move'
+                           'pos title  title  title  move'
                            'pos toggle toggle toggle move';
       grid-template-columns: 1.5rem 0.6fr 1.8fr 0.6fr 6rem;
     }
@@ -712,7 +781,10 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup, I
         this.mode = 'select'
       }
 
-      this._parseInitialOptions();
+      if (this.options.length === 0) {
+        // Only parse HTML <OPTION>s if we have no data to work with.
+        this._parseHtmlOptions();
+      }
 
       let c = 1;
       if (!this.hideValue) {
@@ -726,10 +798,10 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup, I
   }
 
   /**
-   * Parse all the options nested within the `<option-list-editor>`
+   * Parse all the <OPTION>s nested within the `<option-list-editor>`
    * to build the internal state of the component.
    */
-  private _parseInitialOptions() {
+  private _parseHtmlOptions() {
     const tmp = this.getElementsByTagName('option');
 
     /**
@@ -769,21 +841,21 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup, I
       }
 
       const option : ISingleInputOption = {
-        value: _tmp.value,
+        value: _tmp.value.trim(),
         label: (_tmp.innerText !== '')
-          ? _tmp.innerText
+          ? _tmp.innerText.trim()
           : _tmp.value,
         selected: _tmp.selected,
-        hide: !_tmp.disabled,
+        hide: _tmp.disabled,
         group: groupLabel,
         hideBefore: (typeof _tmp.dataset.hidebefore === 'string')
-          ? _tmp.dataset.hidebefore as string
+          ? (_tmp.dataset.hidebefore as string).trim()
           : '',
         hideAfter: (typeof _tmp.dataset.hideafter === 'string')
-          ? _tmp.dataset.hidebefore as string
+          ? (_tmp.dataset.hidebefore as string).trim()
           : '',
-        title: (typeof _tmp.dataset.title === 'string')
-          ? _tmp.dataset.title as string
+        title: (typeof _tmp.title === 'string')
+          ? (_tmp.title as string).trim()
           : ''
       };
 
@@ -801,12 +873,12 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup, I
 
       this.options.push(option)
 
-      if (option.hideBefore !== '') {
-        this.showHideBefore = true;
-      }
-      if (option.hideAfter !== '') {
-        this.showHideAfter = true;
-      }
+      // if (option.hideBefore !== '') {
+      //   this.showHideBefore = true;
+      // }
+      // if (option.hideAfter !== '') {
+      //   this.showHideAfter = true;
+      // }
     }
   }
 
@@ -815,7 +887,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup, I
    * @param options List of options to check
    * @returns
    */
-  private _noDuplicates(options: Array<ISingleInputOption>) : boolean {
+  private _noDuplicates(options: Array<ISingleInputOptionSimple>) : boolean {
     if (this.allowDuplicate === true) {
       return true;
     }
@@ -947,6 +1019,9 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup, I
     if (this.showHideAfter) {
       output += colSep + 'hideAfter';
     }
+    if (this.showTitle) {
+      output += colSep + 'title';
+    }
     return output;
   }
 
@@ -976,6 +1051,9 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup, I
       }
       if (this.showHideAfter) {
         output += colSep + this.options[index].hideAfter;
+      }
+      if (this.showTitle) {
+        output += colSep + this.options[index].title;
       }
     }
 
@@ -1145,10 +1223,27 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup, I
       label : 1,
       selected : 2,
       hide : 3,
-      group : 4,
-      hideBefore : 5,
-      hideAfter : 6,
-      title : 7
+      group : -1,
+      hideBefore : -1,
+      hideAfter : -1,
+      title : -1
+    }
+    let i = 4;
+    if (this.showGroup === true) {
+      cols.group = i;
+      i += 1;
+    }
+    if (this.showHideBefore) {
+      cols.hideBefore = i;
+      i += 1;
+    }
+    if (this.showHideAfter) {
+      cols.hideAfter = i;
+      i += 1;
+    }
+    if (this.showTitle) {
+      cols.title = i;
+      i += 1;
     }
 
     if (this._importHasHeader) {
@@ -1177,7 +1272,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup, I
         group: this._getStr(tmp, a, cols.group).substring(0, 64),
         hideBefore: this._getValidDate(this._getStr(tmp, a, cols.hideBefore, 64)),
         hideAfter: this._getValidDate(this._getStr(tmp, a, cols.hideAfter, 64)),
-        title: this._getValidDate(this._getStr(tmp, a, cols.title, 255))
+        title: this._getStr(tmp, a, cols.title, 255)
       }
 
       if (!this._emptyIsOK(opt, b) && opt.label !== '') {
@@ -1354,6 +1449,10 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup, I
           this.hideValue = !this.hideValue;
           break;
 
+        case 'titleShow':
+          this.showTitle = !this.showTitle;
+          break;
+
         case 'hideBeforeShow':
           this.showHideBefore = !this.showHideBefore;
           break;
@@ -1488,21 +1587,30 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup, I
             tmp.label = val;
             ok = true;
             break;
+
           case 'value':
             tmp.value = val;
             ok = true;
             break;
+
           case 'group':
             tmp.group = val;
             this._groupNames = addToGroupNames(this._groupNames, val);
             ok = true;
             break;
+
           case 'hidebefore':
             tmp.hideBefore = val;
             ok = true;
             break;
+
           case 'hideafter':
             tmp.hideAfter = val;
+            ok = true;
+            break;
+
+          case 'title':
+            tmp.title = val;
             ok = true;
         }
 
@@ -1706,7 +1814,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup, I
       const pos = index + 1;
 
       return html`
-      <li class="cols-${data._colCount}${data._getColClass()}">
+      <li class="single-option cols-${data._colCount}${data._getColClass()}">
         ${this._getReadonlyTextField(option.value as string, 'value', pos, !data.hideValue)}
         ${this._getReadonlyTextField(option.label as string, 'label', pos)}
         ${this._getReadonlyTextField(option.group as string, 'group', pos, data.showGroup)}
@@ -1723,6 +1831,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup, I
           </span>
           ${this._getReadonlyDateField(option.hideBefore, 'before', pos, data.showHideBefore)}
           ${this._getReadonlyDateField(option.hideAfter, 'after', pos, data.showHideAfter)}
+          ${this._getReadonlyTextField(option.title as string, 'title', pos, data.showTitle)}
         </div>
       </li>`
     }
@@ -1737,7 +1846,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup, I
   private _renderReadOnly() {
     return (this.options.length > 0)
       ? html`
-        <ul>
+        <ul class="single-option__wrap">
           ${repeat(this.options, item => item.value, this._getSingleReadonlyOption())}
         </ul>`
       : html`<p><em>No options</em></p>`;
@@ -1762,7 +1871,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup, I
    */
   private _getEditableTextField(value: string, which: string, pos : number, id: string, show: boolean, handler: Function) : TemplateResult|string {
     const listID = (this._groupNames.length > 0)
-      ? '${id}${which}--options'
+      ? id + which + '--options'
       : undefined
 
     return (show === true)
@@ -1776,7 +1885,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup, I
                  placeholder="Option ${pos} ${which}"
                 @change=${handler}
                  list="${ifDefined(listID)}" />
-          ${(this._groupNames.length > 0)
+          ${(which === 'group' && this._groupNames.length > 0)
             ? html`
               <datalist id="${listID}">
                 ${this._groupNames.map(item => html`<option value="${item}">`)}
@@ -1905,6 +2014,7 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup, I
           ${data._getEditableTextField(option.value as string, 'value', pos, id, !data.hideValue, handler)}
           ${data._getEditableTextField(option.label as string, 'label', pos, id, true, handler)}
           ${data._getEditableTextField(option.group as string, 'group', pos, id, (data.allowGroup && data.showGroup && option.value !== ''), handler)}
+          ${data._getEditableTextField(option.title as string, 'title', pos, id, (data.allowTitle && data.showTitle && option.value !== ''), handler)}
           <div class="toggle-block">
             ${(!data.hideHidden) ? data._getToggleBtn(id, !option.hide, 'show', pos, handler) : ''}
             ${data._getToggleBtn(id, option.selected, 'selected', pos, handler)}
@@ -1980,17 +2090,30 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup, I
       <div class="extra-controls">
         ${addBtn}
         <span class="extra-controls__other">
-          <button id="${this.id}____0__sort" class="action-btn action-btn--sort" @click=${handler} title="Sort options alphabetically by ${sortTitle}label">Sort options</button>
-          ${this._getShowHideBtn(id, 'valueShow', 'value input', !this.hideValue, handler)}
-          ${(this.allowGroup)
-            ? this._getShowHideBtn(id, 'groupShow', 'group input', this.showGroup, handler)
-            : ''
-          }
-          ${(this.allowHideByDate)
+          ${(this.options.length > 0)
             ? html`
-              ${this._getShowHideBtn(id, 'hideBeforeShow', 'hide before', this.showHideBefore, handler)}
-              ${this._getShowHideBtn(id, 'hideAfterShow', 'hide after', this.showHideAfter, handler)}
-            `
+            <button id="${this.id}____0__sort"
+                    class="action-btn action-btn--sort"
+                   @click=${handler}
+                    title="Sort options alphabetically by ${sortTitle}label">
+              Sort options
+            </button>
+            ${this._getShowHideBtn(id, 'valueShow', 'value input', !this.hideValue, handler)}
+            ${(this.allowGroup)
+              ? this._getShowHideBtn(id, 'groupShow', 'group input', this.showGroup, handler)
+              : ''
+            }
+            ${(this.allowHideByDate)
+              ? html`
+                ${this._getShowHideBtn(id, 'hideBeforeShow', 'hide before', this.showHideBefore, handler)}
+                ${this._getShowHideBtn(id, 'hideAfterShow', 'hide after', this.showHideAfter, handler)}
+              `
+              : ''
+            }
+            ${(this.allowTitle)
+              ? this._getShowHideBtn(id, 'titleShow', 'title input', this.showTitle, handler)
+              : ''
+            }`
             : ''
           }
           ${(this.allowImport)
@@ -2018,7 +2141,9 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup, I
    */
   private _getDemoOption(option: ISingleInputOption) : TemplateResult {
     return html`
-      <option value="${option.value}" ?selected=${option.selected}>
+      <option value="${option.value}"
+             ?selected=${option.selected}
+              title="${ifDefined((option.title !== '') ? option.title : undefined)}">
         ${option.label}
       </option>`
   }
@@ -2115,12 +2240,13 @@ import { IEventData, ISingleInputOption, IInputOptionImportHead, IOptionGroup, I
     ).map(
       (item : ISingleInputOption, index: number) : TemplateResult => html`
           <li>
-            <label>
+            <label title="${ifDefined((item.title !== '') ? item.title : undefined)}">
               <input type="${this.mode}"
                      value="${item.value}"
                      name="${this.id}__radio"
                      id="${this.id}__radio--${index}"
-                    ?checked=${item.selected} />
+                    ?checked=${item.selected}
+                     title="${ifDefined((item.title !== '') ? item.title : undefined)}" />
               ${item.label}
             </label>
           </li>`
@@ -2637,37 +2763,72 @@ export const getSimplifiedOptionData = (options : Array<ISingleInputOption>) : A
  * to it.
  *
  * To save disc space option data is simplified for storage. This
- * ensures that all options have the properties that are expected
+ * function ensures that all options have the properties that are
+ * expected by `<option-list-editor>`
  *
  * @param options Options with simplified data
  *
  * @returns List of options with full data.
  */
 export const getFullOptionData = (
-  options : Array<ISingleInputOptionSimple>
+  options : any
 ) : Array<ISingleInputOption> => {
-  return options.map((option: ISingleInputOptionSimple) : ISingleInputOption => {
+  if (!Array.isArray(options) || options.length === 0) {
+    return [];
+  }
+
+  // return options.map((option: ISingleInputOptionSimple) : ISingleInputOption => {
+  //   return {
+  //     value: option.value,
+  //     label: (typeof option.label === 'string' && option.label !== '')
+  //       ? option.label
+  //       : option.value,
+  //     selected: (typeof option.selected === 'boolean' && option.selected === true),
+  //     hide: (typeof option.hide === 'boolean' && option.hide === true),
+  //     group: (typeof option.group === 'string')
+  //       ? option.group
+  //       : '',
+  //     hideBefore: (typeof option.hideBefore === 'string')
+  //       ? option.hideBefore
+  //       : '',
+  //     hideAfter: (typeof option.hideAfter === 'string')
+  //       ? option.hideAfter
+  //       : '',
+  //     title: (typeof option.title === 'string')
+  //       ? option.title
+  //       : ''
+  //   }
+  // })filter(
+  return options.filter(
+    option => (
+      typeof option !== 'undefined' && (option as ISingleInputOptionSimple).value !== undefined
+    )
+  ).map(option => {
+    const _val = option.value.trim();
+
     return {
-      value: option.value,
-      label: (typeof option.label === 'string' && option.label !== '')
-        ? option.label
-        : option.value,
+      value: _val,
+      label: (typeof option.label === 'string')
+        ? option.label.trim()
+        : _val,
       selected: (typeof option.selected === 'boolean' && option.selected === true),
-      hide: (typeof option.hide === 'boolean' && option.hide === true),
+      hide: (typeof option.hide !== 'boolean' || option.hide === true),
       group: (typeof option.group === 'string')
-        ? option.group
+        ? option.group.trim()
         : '',
       hideBefore: (typeof option.hideBefore === 'string')
-        ? option.hideBefore
+        ? option.hideBefore.trim()
         : '',
       hideAfter: (typeof option.hideAfter === 'string')
-        ? option.hideAfter
+        ? option.hideAfter.trim()
         : '',
       title: (typeof option.title === 'string')
-        ? option.title
-        : ''
+      ? option.title.trim()
+      : ''
     }
-  })
+  }).filter(
+    option => (option.label !== '')
+  )
 }
 
 // START:  Shared state manipulation methods
